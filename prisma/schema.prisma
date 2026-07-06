@@ -1,0 +1,115 @@
+// Student Learning Tool — Prisma Schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// 学科 / 主题
+model Subject {
+  id        String   @id @default(cuid())
+  name      String
+  color     String   @default("#16a34a")
+  icon      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  knowledgePoints KnowledgePoint[]
+  wrongQuestions  WrongQuestion[]
+  thinkingNotes   ThinkingNote[]
+}
+
+// 知识点
+model KnowledgePoint {
+  id        String   @id @default(cuid())
+  title     String
+  content   String
+  tags      String   @default("") // comma separated
+  subjectId String?
+  subject   Subject? @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  mastery   Int      @default(0) // 0-100, AI-evaluated or self-reported
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 关联：作为起点或终点
+  relationsFrom KnowledgeRelation[] @relation("KnowledgeRelationFrom")
+  relationsTo   KnowledgeRelation[] @relation("KnowledgeRelationTo")
+
+  // 关联错题
+  wrongQuestions WrongQuestion[]
+}
+
+// 知识点之间的关联
+model KnowledgeRelation {
+  id          String   @id @default(cuid())
+  fromId      String
+  toId        String
+  type        String   @default("related") // related | prerequisite | extension | contrast | example
+  description String   @default("")
+  aiGenerated Boolean  @default(false)
+  createdAt DateTime  @default(now())
+
+  from KnowledgePoint @relation("KnowledgeRelationFrom", fields: [fromId], references: [id], onDelete: Cascade)
+  to   KnowledgePoint @relation("KnowledgeRelationTo", fields: [toId], references: [id], onDelete: Cascade)
+}
+
+// 自主思考笔记
+model ThinkingNote {
+  id         String   @id @default(cuid())
+  title      String
+  content    String   @default("") // 学生的原始思考
+  question   String   @default("") // 思考的起因/问题
+  aiReflection String @default("") // AI 给出的引导与反思
+  aiMode     String   @default("socratic") // socratic | summarize | challenge | extend
+  status     String   @default("draft") // draft | reflecting | reflected
+  subjectId  String?
+  subject    Subject? @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  relatedKnowledgeIds String @default("") // comma separated
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+// 错题
+model WrongQuestion {
+  id            String   @id @default(cuid())
+  question      String
+  questionType  String   @default("short") // short | multiple | fill | proof | other
+  options       String   @default("") // JSON string for multiple choice
+  myAnswer      String   @default("")
+  correctAnswer String   @default("")
+  analysis      String   @default("") // 学生自填的错因
+  aiExplanation String   @default("") // AI 给出的解析
+  status        String   @default("unresolved") // unresolved | reviewed | mastered
+  subjectId     String?
+  subject       Subject? @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  relatedKnowledgeId String?
+  relatedKnowledge   KnowledgePoint? @relation(fields: [relatedKnowledgeId], references: [id], onDelete: SetNull)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// AI 对话会话
+model ChatSession {
+  id        String   @id @default(cuid())
+  title     String   @default("新对话")
+  context   String   @default("") // JSON: 上下文类型，例如 {type:'knowledge', id:'xxx'}
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  messages ChatMessage[]
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  sessionId String
+  role      String   // user | assistant | system
+  content   String
+  meta      String   @default("") // JSON: 可能包含搜索结果、引用的知识点等
+  createdAt DateTime @default(now())
+
+  session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
