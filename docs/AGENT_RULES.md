@@ -29,12 +29,13 @@
 ⑥ 跑全量测试:`bun run test:all`
 ⑦ 跑 lint:`bun run lint`
 ⑧ 确认测试覆盖率达标(见 TESTING.md)
-⑨ 在 worklog.md 追加最终 stage summary
+⑨ 清理测试数据 + 注入演示数据:`bun run db:seed`
+⑩ 在 worklog.md 追加最终 stage summary
 ```
 
 ---
 
-## 2. 三大硬性要求(违反即失败)
+## 2. 四大硬性要求(违反即失败)
 
 ### 2.1 需求变更必须同步更新文档
 
@@ -93,6 +94,45 @@ bun run test:all
 **失败处理**:
 - 测试失败时,优先修复代码,而非修改测试(除非测试本身的断言是错的)
 - 若无法立即修复,在 worklog.md 中明确记录失败原因,并在任务报告中标注"测试未通过"
+
+### 2.4 测试后必须清理测试数据并注入演示数据
+
+**场景**: 以下任一情况发生后,必须执行数据清理 + 演示数据注入:
+- 运行了 E2E 测试(`bun run test:e2e` 或 `bun run test:all`)
+- 手动在开发环境创建了测试用的脏数据(如 "E2E测试学科_xxx"、"测试知识点" 等)
+- 任务完成前的最终验收步骤
+
+**强制命令**:
+```bash
+bun run db:seed
+```
+
+此命令会:
+1. **清空**所有业务表(Subject / KnowledgePoint / KnowledgeRelation / ThinkingNote / WrongQuestion / ChatSession / ChatMessage)
+2. **注入**一组精心设计的演示数据,让用户打开应用就能直观看到功能效果
+
+**演示数据内容**(见 `scripts/reset-data.ts`):
+- 3 个学科: 数学📐 / 物理⚛️ / 英语📚
+- 6 个知识点: 勾股定理、数轴、乘法交换律、牛顿第二定律、惯性、现在完成时
+- 3 条知识点关联(含 AI 生成的关联,带 aiGenerated 标记)
+- 2 条思考笔记: 1 条已含 AI 苏格拉底式引导,1 条草稿
+- 2 道错题: 1 道已含 AI 结构化解析,1 道未处理
+- 1 个 AI 对话会话(含 2 条消息:用户提问 + AI 回复)
+
+**E2E 测试自动清理**:
+- `playwright.config.ts` 已配置 `globalTeardown`,E2E 测试跑完会自动调用清理 + 注入
+- 但 Agent 仍应在任务完成前**手动跑一次** `bun run db:seed`,确保最终状态干净
+
+**相关命令**:
+| 命令 | 用途 |
+|---|---|
+| `bun run db:seed` | 清空 + 注入演示数据(最常用) |
+| `bun run db:clear` | 仅清空,不注入(用于调试) |
+
+**禁止**:
+- ❌ 跑完 E2E 测试不清理,留下 "E2E测试学科_1234567890" 这种脏数据
+- ❌ 修改 `scripts/reset-data.ts` 中的演示数据时不更新本节描述
+- ❌ 在演示数据中使用真实用户的敏感信息
 
 ---
 
@@ -195,6 +235,7 @@ Stage Summary:
 5. **"lint 警告忽略"** — lint 必须零警告零错误
 6. **"AI 调用放客户端"** — 严禁,会有 API key 泄露风险
 7. **"直接改 Prisma schema 不 push"** — schema 改完必须 `db:push`
+8. **"测试残留不清理"** — 跑完测试必须 `bun run db:seed`,留下干净演示数据
 
 ---
 
@@ -207,8 +248,9 @@ Stage Summary:
 - [ ] `bun run test:all` 全部通过
 - [ ] 覆盖率达到阈值
 - [ ] `bun run lint` 零错误
+- [ ] `bun run db:seed` 已执行(测试数据已清理,演示数据已注入)
 - [ ] `/home/z/my-project/worklog.md` 已追加 stage summary
-- [ ] 若涉及数据库变更,`bun run db:push` 已执行
+- [ ] 若涉及数据库 schema 变更,`bun run db:push` 已执行
 - [ ] 若涉及 UI 变更,已用 Agent Browser 验证渲染
 
 任一项未完成,不得报告任务完成。
@@ -220,3 +262,4 @@ Stage Summary:
 | 日期 | 版本 | 变更 | 作者 |
 |---|---|---|---|
 | 2026-07-07 | v1.0 | 初始版本 | agent |
+| 2026-07-07 | v1.1 | 新增 2.4 测试数据清理规则;新增 `bun run db:seed` / `db:clear` 脚本;E2E 增加 globalTeardown 自动清理 | agent |

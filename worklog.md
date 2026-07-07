@@ -46,3 +46,30 @@ Stage Summary:
 - ESLint 零错误零警告
 - 三份文档形成完整工程化基线: REQUIREMENTS.md(需求) + AGENT_RULES.md(规则) + TESTING.md(测试策略)
 - 下次接手项目的 Agent 只需读这三份文档 + worklog.md 即可无损继续
+
+---
+Task ID: engineering-2
+Agent: main
+Task: 新增开发规则 — 测试后清理测试数据 + 注入演示数据
+
+Work Log:
+- 创建 scripts/reset-data.ts: 清空所有业务表 + 注入演示数据(3学科/6知识点/3关联/2思考笔记/2错题/1对话会话)
+- 演示数据精心设计:数学/物理/英语三大学科,知识点含 Markdown 格式内容,思考笔记含完整 AI 苏格拉底引导样例,错题含 AI 结构化解析样例
+- 重构 reset-data.ts:导出 resetData/clearData 函数供 import 调用,同时保留 CLI 入口(bun run db:seed)
+- 创建 tests/e2e/global-teardown.ts:E2E 测试跑完自动调用 clearData + resetData
+- playwright.config.ts 增加 globalTeardown 配置
+- package.json 增加 db:seed 和 db:clear 脚本
+- AGENT_RULES.md 更新:
+  * "三大硬性要求" → "四大硬性要求"
+  * 新增 2.4 节:测试后必须清理测试数据并注入演示数据
+  * 工作流增加步骤 ⑨ bun run db:seed
+  * 任务完成检查清单增加 db:seed 项
+  * 反模式增加第 8 条"测试残留不清理"
+  * 文档版本升至 v1.1
+- 验证:E2E 26 个测试全过 + teardown 自动清理成功 + Agent Browser 确认演示数据正确渲染(3学科/6知识点/2思考笔记/2错题)
+
+Stage Summary:
+- 新增第四条硬性开发规则,已写入 AGENT_RULES.md 2.4 节
+- 演示数据让用户打开应用即可直观感受所有功能(无需手动建数据)
+- E2E 测试自动清理,无需手动干预
+- 命令: bun run db:seed(清空+注入) / bun run db:clear(仅清空)
