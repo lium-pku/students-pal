@@ -82,8 +82,9 @@ export default function Home() {
             <Button
               variant="ghost"
               size="icon"
-              className="md:hidden h-8 w-8"
+              className="lg:hidden h-9 w-9"
               onClick={() => setSidebarOpen(!sidebarOpen)}
+              aria-label="切换菜单"
             >
               {sidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
             </Button>
@@ -109,13 +110,13 @@ export default function Home() {
             >
               {aiOpen ? (
                 <>
-                  <X className="h-3.5 w-3.5 mr-1" />
-                  收起 AI
+                  <X className="h-4 w-4 mr-1" />
+                  <span className="hidden sm:inline">收起 AI</span>
                 </>
               ) : (
                 <>
-                  <PanelRightOpen className="h-3.5 w-3.5 mr-1" />
-                  AI 学伴
+                  <PanelRightOpen className="h-4 w-4 mr-1" />
+                  <span className="hidden sm:inline">AI 学伴</span>
                 </>
               )}
             </Button>
@@ -124,8 +125,8 @@ export default function Home() {
       </header>
 
       <div className="flex-1 flex">
-        {/* 侧边栏（桌面） */}
-        <aside className="hidden md:flex w-56 border-r bg-sidebar flex-col">
+        {/* 侧边栏(桌面: ≥1024px 常驻) */}
+        <aside className="hidden lg:flex w-56 border-r bg-sidebar flex-col">
           <nav className="flex-1 p-3 space-y-1">
             {NAV.map((n) => (
               <button
@@ -159,20 +160,20 @@ export default function Home() {
           </div>
         </aside>
 
-        {/* 侧边栏（移动端） */}
+        {/* 侧边栏(平板/移动: 抽屉式, <1024px) */}
         {sidebarOpen && (
           <>
             <div
-              className="md:hidden fixed inset-0 bg-black/30 z-30"
+              className="lg:hidden fixed inset-0 bg-black/30 z-30"
               onClick={() => setSidebarOpen(false)}
             />
-            <aside className="md:hidden fixed left-0 top-14 bottom-0 w-64 bg-sidebar border-r z-40 flex flex-col">
+            <aside className="lg:hidden fixed left-0 top-14 bottom-0 w-64 bg-sidebar border-r z-40 flex flex-col">
               <nav className="flex-1 p-3 space-y-1">
                 {NAV.map((n) => (
                   <button
                     key={n.id}
                     onClick={() => navigate(n.id)}
-                    className={`w-full flex items-start gap-3 p-2.5 rounded-lg text-left transition-colors ${
+                    className={`w-full flex items-start gap-3 p-3 rounded-lg text-left transition-colors ${
                       tab === n.id
                         ? 'bg-primary/10 text-primary'
                         : 'hover:bg-accent/50 text-sidebar-foreground'
@@ -191,11 +192,7 @@ export default function Home() {
         )}
 
         {/* 主内容区 */}
-        <main
-          className={`flex-1 overflow-y-auto scrollbar-thin transition-all ${
-            aiOpen ? 'lg:mr-[420px]' : ''
-          }`}
-        >
+        <main className="flex-1 overflow-y-auto scrollbar-thin transition-all min-w-0">
           <div className="max-w-6xl mx-auto p-4 sm:p-6">
             {tab === 'dashboard' && <Dashboard subjects={subjects} onNavigate={navigate} />}
             {tab === 'subjects' && <SubjectsModule subjects={subjects} onChange={loadSubjects} />}
@@ -207,7 +204,7 @@ export default function Home() {
 
         {/* AI 面板 */}
         {aiOpen && (
-          <aside className="fixed lg:static right-0 top-14 bottom-0 w-full lg:w-[420px] z-20 lg:z-auto">
+          <aside className="fixed md:static right-0 top-14 bottom-0 w-full md:w-[380px] z-20 md:z-auto">
             <AIPanel
               context={aiContext}
               onClose={() => setAiOpen(false)}

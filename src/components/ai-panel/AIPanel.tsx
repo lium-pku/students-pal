@@ -219,29 +219,29 @@ export function AIPanel({ context, onClose, onClearContext }: AIPanelProps) {
           <Button
             size="icon"
             variant="ghost"
-            className="h-7 w-7"
+            className="h-9 w-9"
             onClick={() => setShowHistory(!showHistory)}
             title="历史会话"
           >
-            <MessageSquare className="h-3.5 w-3.5" />
+            <MessageSquare className="h-4 w-4" />
           </Button>
           <Button
             size="icon"
             variant="ghost"
-            className="h-7 w-7"
+            className="h-9 w-9"
             onClick={newChat}
             title="新对话"
           >
-            <Plus className="h-3.5 w-3.5" />
+            <Plus className="h-4 w-4" />
           </Button>
           <Button
             size="icon"
             variant="ghost"
-            className="h-7 w-7"
+            className="h-9 w-9"
             onClick={onClose}
             title="关闭面板"
           >
-            <PanelRightClose className="h-3.5 w-3.5" />
+            <PanelRightClose className="h-4 w-4" />
           </Button>
         </div>
       </div>
@@ -270,7 +270,7 @@ export function AIPanel({ context, onClose, onClearContext }: AIPanelProps) {
                 <Button
                   size="icon"
                   variant="ghost"
-                  className="h-6 w-6 opacity-0 group-hover:opacity-100"
+                  className="h-8 w-8 md:opacity-0 md:group-hover:opacity-100"
                   onClick={(e) => {
                     e.stopPropagation()
                     deleteSession(s.id)
@@ -361,11 +361,11 @@ export function AIPanel({ context, onClose, onClearContext }: AIPanelProps) {
           />
           <Button
             size="icon"
-            className="absolute bottom-2 right-2 h-7 w-7"
+            className="absolute bottom-2 right-2 h-9 w-9"
             onClick={send}
             disabled={!input.trim() || sending || searching}
           >
-            <Send className="h-3.5 w-3.5" />
+            <Send className="h-4 w-4" />
           </Button>
         </div>
         <p className="text-xs text-muted-foreground">

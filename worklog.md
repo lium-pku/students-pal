@@ -73,3 +73,43 @@ Stage Summary:
 - 演示数据让用户打开应用即可直观感受所有功能(无需手动建数据)
 - E2E 测试自动清理,无需手动干预
 - 命令: bun run db:seed(清空+注入) / bun run db:clear(仅清空)
+
+---
+Task ID: p0-tablet-1
+Agent: main
+Task: P0 平板适配修复 — 断点逻辑 + 触摸目标
+
+Work Log:
+- 修改 src/app/page.tsx 断点逻辑:
+  * 侧边栏断点从 md:(768px) 改为 lg:(1024px),768-1023px 用抽屉式
+  * AI 面板断点从 lg:(1024px) 改为 md:(768px),≥768px 时 static 侧边 380px,< 768px fixed 全屏
+  * 主内容区移除 md:mr-[380px](因 AI 面板 md+ 已是 flex 子项,margin 会双重占位),改用 min-w-0 防 flex 溢出
+  * AI 面板宽度从 420px 改为 380px(适配平板)
+  * 顶部 AI 按钮文案在 <640px 隐藏文字仅保留图标
+  * 移动端抽屉式侧边栏的 nav 按钮 padding 从 p-2.5 加大到 p-3
+- 修改 src/components/modules/Knowledge.tsx 触摸目标:
+  * 卡片上的 AI推荐/编辑/删除按钮从 size="sm" + h-3.5 图标 改为 size="icon" + h-9 w-9 + h-4 图标(36px)
+  * 详情对话框中的关联删除 X 按钮从 h-6 w-6 改为 h-8 w-8(32px)
+- 修改 src/components/ai-panel/AIPanel.tsx 触摸目标:
+  * 头部三个图标按钮(历史会话/新对话/关闭)从 h-7 w-7 + h-3.5 图标 改为 h-9 w-9 + h-4 图标(36px)
+  * 发送按钮从 h-7 w-7 改为 h-9 w-9(36px)
+  * 历史会话删除按钮从 h-6 w-6 + opacity-0 group-hover:opacity-100 改为 h-8 w-8 + md:opacity-0 md:group-hover:opacity-100(平板常显,桌面 hover 显)
+- 用 Agent Browser 实测四个尺寸:
+  * 375px(手机): AI 面板 fixed 全屏覆盖 ✓
+  * 768px(平板竖屏): 无侧边栏 + AI 面板 static 380px + 主内容 388px ✓
+  * 1024px(平板横屏): 侧边栏 224px + AI 面板 static 380px + 主内容 420px ✓
+  * 1280px(桌面): 侧边栏 224px + 主内容 1056px ✓
+- 更新 docs/REQUIREMENTS.md:
+  * 5.2 响应式章节重写,详述新断点设计
+  * 5.3 可访问性章节更新触摸目标尺寸
+  * 变更日志增加 v1.1 条目
+- 跑全部测试:199 单元测试 + 26 E2E 测试全过,覆盖率达标(70.83%/62.32%/63.56%/72.41%)
+- bun run db:seed 清理测试数据,注入演示数据
+
+Stage Summary:
+- P0 平板适配完成,核心可用性问题解决
+- 平板竖屏(768px)不再被侧边栏挤占,AI 面板不再全屏覆盖主内容
+- 平板横屏(1024px)三栏并存,可边看笔记边问 AI
+- 触摸目标全部 ≥32px,关键操作按钮 36px
+- 桌面端体验无回归
+- 4 张实测截图保存到 download/ 目录

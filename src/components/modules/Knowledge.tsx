@@ -302,38 +302,40 @@ export function KnowledgeModule({ subjects, onAskAI }: KnowledgeModuleProps) {
                     <span className="text-xs text-muted-foreground">
                       {p.relationsFrom?.length + p.relationsTo?.length || 0} 个关联
                     </span>
-                    <div className="flex gap-1">
+                    <div className="flex gap-0.5">
                       <Button
                         variant="ghost"
-                        size="sm"
+                        size="icon"
+                        className="h-9 w-9"
                         onClick={(e) => {
                           e.stopPropagation()
                           suggestConnections(p)
                         }}
                         title="AI 推荐关联"
                       >
-                        <Sparkles className="h-3.5 w-3.5" />
+                        <Sparkles className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
-                        size="sm"
+                        size="icon"
+                        className="h-9 w-9"
                         onClick={(e) => {
                           e.stopPropagation()
                           openEdit(p)
                         }}
                       >
-                        <Pencil className="h-3.5 w-3.5" />
+                        <Pencil className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
-                        size="sm"
-                        className="text-destructive"
+                        size="icon"
+                        className="h-9 w-9 text-destructive"
                         onClick={(e) => {
                           e.stopPropagation()
                           remove(p.id)
                         }}
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
@@ -442,7 +444,7 @@ export function KnowledgeModule({ subjects, onAskAI }: KnowledgeModuleProps) {
                             <Button
                               size="icon"
                               variant="ghost"
-                              className="h-6 w-6"
+                              className="h-8 w-8"
                               onClick={() => removeRelation(r.id)}
                             >
                               <X className="h-3 w-3" />
@@ -475,7 +477,7 @@ export function KnowledgeModule({ subjects, onAskAI }: KnowledgeModuleProps) {
                             <Button
                               size="icon"
                               variant="ghost"
-                              className="h-6 w-6"
+                              className="h-8 w-8"
                               onClick={() => removeRelation(r.id)}
                             >
                               <X className="h-3 w-3" />
