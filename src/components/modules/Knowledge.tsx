@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { AutoTextarea } from '@/components/AutoTextarea'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -230,9 +231,9 @@ export function KnowledgeModule({ subjects, onAskAI }: KnowledgeModuleProps) {
           </SelectContent>
         </Select>
         <Tabs value={view} onValueChange={(v) => setView(v as any)}>
-          <TabsList>
-            <TabsTrigger value="grid">网格</TabsTrigger>
-            <TabsTrigger value="graph">关联图</TabsTrigger>
+          <TabsList className="h-10">
+            <TabsTrigger value="grid" className="px-4">网格</TabsTrigger>
+            <TabsTrigger value="graph" className="px-4">关联图</TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
@@ -350,7 +351,7 @@ export function KnowledgeModule({ subjects, onAskAI }: KnowledgeModuleProps) {
 
       {/* 知识点详情 */}
       <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
+        <DialogContent className="w-[95vw] max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
           {selected && (
             <>
               <DialogHeader>
@@ -524,7 +525,7 @@ export function KnowledgeModule({ subjects, onAskAI }: KnowledgeModuleProps) {
 
       {/* 编辑器 */}
       <Dialog open={editorOpen} onOpenChange={setEditorOpen}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editId ? '编辑知识点' : '新建知识点'}</DialogTitle>
           </DialogHeader>
@@ -540,11 +541,13 @@ export function KnowledgeModule({ subjects, onAskAI }: KnowledgeModuleProps) {
             </div>
             <div>
               <Label>内容（支持 Markdown）</Label>
-              <Textarea
+              <AutoTextarea
                 value={form.content}
                 onChange={(e) => setForm({ ...form, content: e.target.value })}
-                className="mt-1 min-h-32 font-mono text-sm"
+                className="mt-1 font-mono text-sm"
                 placeholder="详细描述这个知识点..."
+                minRows={4}
+                maxRows={15}
               />
             </div>
             <div>
@@ -600,7 +603,7 @@ export function KnowledgeModule({ subjects, onAskAI }: KnowledgeModuleProps) {
 
       {/* AI 关联建议 */}
       <Dialog open={!!connecting} onOpenChange={(o) => !o && setConnecting(null)}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+        <DialogContent className="w-[95vw] max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-primary" />

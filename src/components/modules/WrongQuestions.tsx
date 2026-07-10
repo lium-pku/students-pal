@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { AutoTextarea } from '@/components/AutoTextarea'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
@@ -321,7 +322,7 @@ export function WrongQuestionsModule({ subjects, onAskAI }: WrongQuestionsModule
 
       {/* 错题详情 */}
       <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogContent className="w-[95vw] max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
           {selected && (
             <>
               <DialogHeader>
@@ -334,43 +335,51 @@ export function WrongQuestionsModule({ subjects, onAskAI }: WrongQuestionsModule
                 <div className="space-y-4 pb-2">
                   <div>
                     <Label className="text-xs text-muted-foreground">题目</Label>
-                    <Textarea
+                    <AutoTextarea
                       value={selected.question}
                       onChange={(e) => setSelected({ ...selected, question: e.target.value })}
                       onBlur={(e) => saveContent({ question: e.target.value })}
-                      className="mt-1 min-h-24"
+                      className="mt-1"
+                      minRows={3}
+                      maxRows={10}
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <Label className="text-xs text-muted-foreground">你的答案</Label>
-                      <Textarea
+                      <AutoTextarea
                         value={selected.myAnswer}
                         onChange={(e) => setSelected({ ...selected, myAnswer: e.target.value })}
                         onBlur={(e) => saveContent({ myAnswer: e.target.value })}
-                        className="mt-1 min-h-16 text-rose-700"
+                        className="mt-1 text-rose-700"
+                        minRows={2}
+                        maxRows={6}
                       />
                     </div>
                     <div>
                       <Label className="text-xs text-muted-foreground">正确答案</Label>
-                      <Textarea
+                      <AutoTextarea
                         value={selected.correctAnswer}
                         onChange={(e) => setSelected({ ...selected, correctAnswer: e.target.value })}
                         onBlur={(e) => saveContent({ correctAnswer: e.target.value })}
-                        className="mt-1 min-h-16 text-emerald-700"
+                        className="mt-1 text-emerald-700"
+                        minRows={2}
+                        maxRows={6}
                       />
                     </div>
                   </div>
 
                   <div>
                     <Label className="text-xs text-muted-foreground">你的错因分析（先自己想想）</Label>
-                    <Textarea
+                    <AutoTextarea
                       value={selected.analysis}
                       onChange={(e) => setSelected({ ...selected, analysis: e.target.value })}
                       onBlur={(e) => saveContent({ analysis: e.target.value })}
                       placeholder="为什么会错？是哪个概念没搞清？还是计算失误？"
-                      className="mt-1 min-h-20"
+                      className="mt-1"
+                      minRows={3}
+                      maxRows={8}
                     />
                   </div>
 
@@ -489,18 +498,20 @@ export function WrongQuestionsModule({ subjects, onAskAI }: WrongQuestionsModule
 
       {/* 编辑器 */}
       <Dialog open={editorOpen} onOpenChange={setEditorOpen}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editId ? '编辑错题' : '添加错题'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
               <Label>题目 *</Label>
-              <Textarea
+              <AutoTextarea
                 value={form.question}
                 onChange={(e) => setForm({ ...form, question: e.target.value })}
-                className="mt-1 min-h-24"
+                className="mt-1"
                 placeholder="完整的题目内容..."
+                minRows={3}
+                maxRows={10}
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -545,28 +556,34 @@ export function WrongQuestionsModule({ subjects, onAskAI }: WrongQuestionsModule
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>你的答案</Label>
-                <Textarea
+                <AutoTextarea
                   value={form.myAnswer}
                   onChange={(e) => setForm({ ...form, myAnswer: e.target.value })}
-                  className="mt-1 min-h-16"
+                  className="mt-1"
+                  minRows={2}
+                  maxRows={6}
                 />
               </div>
               <div>
                 <Label>正确答案</Label>
-                <Textarea
+                <AutoTextarea
                   value={form.correctAnswer}
                   onChange={(e) => setForm({ ...form, correctAnswer: e.target.value })}
-                  className="mt-1 min-h-16"
+                  className="mt-1"
+                  minRows={2}
+                  maxRows={6}
                 />
               </div>
             </div>
             <div>
               <Label>错因分析（可选）</Label>
-              <Textarea
+              <AutoTextarea
                 value={form.analysis}
                 onChange={(e) => setForm({ ...form, analysis: e.target.value })}
-                className="mt-1 min-h-16"
+                className="mt-1"
                 placeholder="先想想自己为什么错..."
+                minRows={2}
+                maxRows={6}
               />
             </div>
             <div>

@@ -113,3 +113,51 @@ Stage Summary:
 - 触摸目标全部 ≥32px,关键操作按钮 36px
 - 桌面端体验无回归
 - 4 张实测截图保存到 download/ 目录
+
+---
+Task ID: p1-p2-tablet-pwa
+Agent: main
+Task: P1 体验优化 + P2 PWA 支持
+
+Work Log:
+
+P1 — 体验优化:
+- 创建 src/components/AutoTextarea.tsx: 自动撑高的 Textarea(minRows/maxRows 控制),内容增加自动增高,超过 maxRows 启用滚动
+- Thinking 模块:question(minRows=2,maxRows=6)+ content(minRows=6,maxRows=20)+ 编辑器 question 全部改用 AutoTextarea
+- WrongQuestions 模块:题目/答案/正确答案/错因分析/编辑器表单 全部改用 AutoTextarea
+- Knowledge 模块:知识点内容编辑改用 AutoTextarea(minRows=4,maxRows=15)
+- AIPanel:对话输入框改用 AutoTextarea(minRows=2,maxRows=6)
+- Dialog 自适应:所有 DialogContent 统一加 w-[95vw] + 保留 max-w-3xl/4xl/2xl/md/lg,小屏占 95% 宽度,大屏不超过 max-w
+- globals.css:平板区间(768-1023px)html font-size 改为 15px;触摸设备禁用 hover;按钮禁用长按选中+消除 tap-highlight;输入框允许长按选中;横向滚动优化 -webkit-overflow-scrolling: touch
+- Knowledge Tab 高度从默认改为 h-10,触摸目标更大
+
+P2 — PWA 支持:
+- 创建 scripts/generate-icons.ts:用 sharp 库基于 SVG 生成 192/512 普通+maskable+32 favicon+180 apple-touch-icon
+- 运行脚本生成 6 个图标到 public/icons/ 和 public/
+- 创建 public/manifest.json:standalone 模式 + 4 个图标(any+maskable) + 3 个 shortcuts(思考/错题/知识)
+- 创建 public/sw.js:Service Worker
+  * 静态资源:stale-while-revalidate
+  * API 请求:网络优先,失败返回缓存
+  * 页面导航:网络优先,失败返回 offline.html
+  * 安装时预缓存核心资源
+  * 激活时清理旧缓存
+- 创建 public/offline.html:离线兜底页(暖绿主题+图标+重连按钮+网络恢复自动刷新)
+- 更新 src/app/layout.tsx:
+  * metadata 增加 manifest/appleWebApp/icons 配置
+  * 新增 viewport export:themeColor #2a9d8f + viewportFit cover
+  * head 注入 SW 注册脚本(仅生产环境)
+- package.json 增加 icons:generate 脚本
+
+验证:
+- Agent Browser 实测:manifest.json 可访问(4 icons, 3 shortcuts),sw.js 可访问(200, application/javascript),offline.html 可访问,icon-192.png 可访问,theme-color meta 存在,apple-touch-icon link 存在
+- AutoTextarea 实测:思考笔记 dialog 中 question textarea 48px(2 行),content textarea 144px(6 行),自动撑高正常
+- Dialog 实测:820px 视口下 dialog 宽 480px(居中,左右各 170px),不顶边缘
+- 全部测试:199 单元+集成 + 26 E2E 全过,覆盖率 71.17%/62.29%/63.98%/73.01% 达标
+- lint 零错误
+- bun run db:seed 清理测试数据,注入演示数据
+
+Stage Summary:
+- P1 完成:Dialog 自适应 + Textarea 自动撑高 + 平板字体优化 + 触摸设备适配
+- P2 完成:完整 PWA 支持,用户可"添加到主屏幕"作为独立 App,离线有兜底页
+- 现在在平板上:iOS Safari 分享→添加到主屏幕,Android Chrome 安装应用,桌面 Chrome/Edge 地址栏安装
+- 文档更新:REQUIREMENTS.md 5.2/5.3/5.4(PWA 新章节)/5.5/5.6 + 变更日志 v1.2

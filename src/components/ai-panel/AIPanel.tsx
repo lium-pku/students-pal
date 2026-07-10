@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { ChatSession, ChatMessage, api } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import { AutoTextarea } from '@/components/AutoTextarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { Plus, Send, Sparkles, Search, Loader2, MessageSquare, Trash2, Globe, Bot, User, X, PanelRightClose } from 'lucide-react'
@@ -347,11 +348,13 @@ export function AIPanel({ context, onClose, onClearContext }: AIPanelProps) {
           )}
         </div>
         <div className="relative">
-          <Textarea
+          <AutoTextarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder={searchMode ? '输入要搜索的问题...' : '向 AI 学伴提问...'}
-            className="min-h-60 max-h-40 resize-none pr-12 text-sm"
+            className="resize-none pr-12 text-sm"
+            minRows={2}
+            maxRows={6}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault()

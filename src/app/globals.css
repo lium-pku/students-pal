@@ -182,3 +182,34 @@
 .markdown-body strong {
   @apply font-semibold;
 }
+
+/* 平板字体优化:768-1024px 区间适当放大正文,提升阅读体验 */
+@media (min-width: 768px) and (max-width: 1023px) {
+  html {
+    font-size: 15px;
+  }
+}
+
+/* 触摸设备:移除 hover 依赖,所有 hover 效果改为 active */
+@media (hover: none) and (pointer: coarse) {
+  .hover\:shadow-md:hover {
+    box-shadow: none;
+  }
+}
+
+/* 长按选中优化:输入框允许长按选中,其他元素禁用 */
+button, [role="button"] {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+input, textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* 平板横向滚动优化 */
+.scrollbar-thin {
+  -webkit-overflow-scrolling: touch;
+}

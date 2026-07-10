@@ -168,7 +168,7 @@ export function SubjectsModule({ subjects, onChange }: SubjectsModuleProps) {
       )}
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
+        <DialogContent className="w-[95vw] max-w-md">
           <DialogHeader>
             <DialogTitle>{editId ? '重命名学科' : '新建学科'}</DialogTitle>
           </DialogHeader>

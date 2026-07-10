@@ -243,7 +243,7 @@
 
 ### 5.2 响应式
 
-**断点设计**(2026-07-07 P0 修复后):
+**断点设计**(2026-07-07 P0 + 2026-07-10 P1 修复后):
 - **桌面端(≥ 1024px,lg)**: 侧边栏常驻(224px) + 主内容 + AI 面板侧边(380px)三栏并存
 - **平板(768-1023px,md)**: 侧边栏抽屉式(汉堡菜单触发) + 主内容;AI 面板侧边(380px),主内容自动收窄
 - **移动端(< 768px)**: 抽屉式侧边栏;AI 面板 fixed 全屏覆盖(w-full)
@@ -253,18 +253,47 @@
 - AI 面板断点用 `md:`(768px),≥768px 时为 `static` 占据 flex 空间,< 768px 时为 `fixed` 覆盖
 - 主内容区不使用 margin-right 让位(因为 AI 面板在 md+ 已是 flex 子项);`min-w-0` 防止 flex 溢出
 - AI 面板宽度统一 380px(原 420px,适配平板)
+- **P1 新增**: Dialog 统一用 `w-[95vw] max-w-3xl/4xl`,小屏时占 95% 宽度,大屏不超过 max-w
+- **P1 新增**: Textarea 使用 `AutoTextarea` 组件自动撑高(minRows/maxRows 控制),不再用固定 `min-h-`
+- **P1 新增**: 平板区间(768-1023px)`html { font-size: 15px }`(原 14px),提升阅读体验
+- **P1 新增**: 触摸设备禁用 hover 依赖;按钮禁用长按选中;输入框允许长按选中
+- **P1 新增**: Tab 高度从默认改为 `h-10`,触摸目标更大
 
 ### 5.3 可访问性
 - 语义化 HTML(main / header / nav / aside)
 - 键盘可达(Enter 发送消息,Esc 关闭 Dialog)
 - 触摸目标 ≥ 36px(平板端图标按钮 h-9 w-9 = 36px,移动端历史会话删除按钮 h-8 w-8)
 - 平板上 hover-only 的按钮(如历史会话删除)改为始终可见
+- **P1 新增**: 按钮添加 `-webkit-tap-highlight-color: transparent` 消除点击高亮闪烁
 
-### 5.4 主题
+### 5.4 PWA 支持(2026-07-10 P2 新增)
+
+**已实现**:
+- `manifest.json`: 应用名称/图标/快捷方式(shortcuts:新建思考笔记/错题本/知识点)
+- 多尺寸图标: 192/512 普通 + 192/512 maskable + 32 favicon + 180 apple-touch-icon
+- Service Worker(`/sw.js`):
+  - 静态资源(JS/CSS/图片/图标): stale-while-revalidate
+  - API 请求: 网络优先,失败时返回缓存
+  - 页面导航: 网络优先,失败时返回离线兜底页
+- 离线兜底页(`/offline.html`): 简洁提示页,网络恢复时自动刷新
+- layout.tsx 注入: manifest link / theme-color(#2a9d8f) / apple-touch-icon / SW 注册脚本(仅生产环境)
+
+**用户能力**:
+- iOS Safari: 分享 → 添加到主屏幕 → 独立 App 图标
+- Android Chrome: 安装应用 → 独立 App 图标
+- 桌面 Chrome/Edge: 地址栏安装图标 → 独立窗口
+- 离线时: 已缓存页面可访问,API 调用失败时显示离线页
+
+**图标生成**:
+- 脚本: `scripts/generate-icons.ts`(用 sharp 库基于 SVG 生成多尺寸 PNG)
+- 命令: `bun run scripts/generate-icons.ts`
+
+### 5.5 主题
 - 暖绿学术色系(避开蓝紫默认)
 - 浅色 / 深色主题变量已定义(目前未做切换 UI)
+- PWA theme_color: `#2a9d8f`(主色)
 
-### 5.5 国际化
+### 5.6 国际化
 - 当前仅中文
 
 ---
@@ -299,6 +328,8 @@
 5. 知识点关联图的力导向布局
 6. 跨笔记的"思维模式"画像
 
+> **已完成**: ~~P1 Dialog/Textarea/字体优化~~ / ~~P2 PWA(manifest+SW+离线页)~~ (2026-07-10)
+
 ---
 
 ## 8. 变更日志
@@ -307,6 +338,7 @@
 |---|---|---|---|
 | 2026-07-07 | v1.0 | 初始需求文档,覆盖已实现的全部功能 | agent |
 | 2026-07-07 | v1.1 | P0 平板适配:侧边栏断点改 lg:(1024px);AI 面板断点改 md:(768px)侧边 380px;触摸目标放大至 36px+;hover-only 按钮平板常显 | agent |
+| 2026-07-10 | v1.2 | P1 体验优化:Dialog 自适应(w-95vw+max-w);AutoTextarea 自动撑高;平板字体 15px;触摸设备禁用 hover/长按选中。P2 PWA:manifest+多尺寸图标+Service Worker+离线兜底页+layout 注入 | agent |
 
 ---
 

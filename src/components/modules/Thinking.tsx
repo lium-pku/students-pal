@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { AutoTextarea } from '@/components/AutoTextarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Plus, Pencil, Trash2, Search, Sparkles, MessageCircle, BrainCircuit, Loader2, BookOpen } from 'lucide-react'
 import { toast } from 'sonner'
@@ -279,7 +280,7 @@ export function ThinkingModule({ subjects, onAskAI }: ThinkingModuleProps) {
 
       {/* 笔记详情与编辑 */}
       <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
           {selected && (
             <>
               <DialogHeader>
@@ -290,14 +291,16 @@ export function ThinkingModule({ subjects, onAskAI }: ThinkingModuleProps) {
                   {/* 思考起点 */}
                   <div>
                     <Label className="text-xs text-muted-foreground">思考的起点 / 问题</Label>
-                    <Textarea
+                    <AutoTextarea
                       value={selected.question}
                       onChange={(e) =>
                         setSelected({ ...selected, question: e.target.value })
                       }
                       onBlur={(e) => saveContent({ question: e.target.value })}
                       placeholder="写下引发你思考的问题..."
-                      className="mt-1 min-h-16"
+                      className="mt-1"
+                      minRows={2}
+                      maxRows={6}
                     />
                   </div>
 
@@ -307,14 +310,16 @@ export function ThinkingModule({ subjects, onAskAI }: ThinkingModuleProps) {
                       <BrainCircuit className="h-3 w-3" />
                       你的思考（支持 Markdown，失焦自动保存）
                     </Label>
-                    <Textarea
+                    <AutoTextarea
                       value={selected.content}
                       onChange={(e) =>
                         setSelected({ ...selected, content: e.target.value })
                       }
                       onBlur={(e) => saveContent({ content: e.target.value })}
                       placeholder="把脑中的想法写下来，不必完整，不必正确..."
-                      className="mt-1 min-h-48 font-mono text-sm"
+                      className="mt-1 font-mono text-sm"
+                      minRows={6}
+                      maxRows={20}
                     />
                   </div>
 
@@ -415,7 +420,7 @@ export function ThinkingModule({ subjects, onAskAI }: ThinkingModuleProps) {
 
       {/* 编辑器（仅用于创建/重命名） */}
       <Dialog open={editorOpen} onOpenChange={setEditorOpen}>
-        <DialogContent>
+        <DialogContent className="w-[95vw] max-w-lg">
           <DialogHeader>
             <DialogTitle>{editId ? '重命名笔记' : '新建思考笔记'}</DialogTitle>
           </DialogHeader>
@@ -433,11 +438,13 @@ export function ThinkingModule({ subjects, onAskAI }: ThinkingModuleProps) {
               <>
                 <div>
                   <Label>思考的起点 / 问题</Label>
-                  <Textarea
+                  <AutoTextarea
                     value={form.question}
                     onChange={(e) => setForm({ ...form, question: e.target.value })}
-                    className="mt-1 min-h-16"
+                    className="mt-1"
                     placeholder="是什么引发了你的思考？"
+                    minRows={2}
+                    maxRows={6}
                   />
                 </div>
                 <div>
