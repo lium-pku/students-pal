@@ -6,14 +6,14 @@
       "file": "subjects/数学.md"
     },
     {
-      "id": "subj_english",
-      "name": "英语",
-      "file": "subjects/英语.md"
-    },
-    {
       "id": "subj_physics",
       "name": "物理",
       "file": "subjects/物理.md"
+    },
+    {
+      "id": "subj_english",
+      "name": "英语",
+      "file": "subjects/英语.md"
     }
   ],
   "knowledge": [
@@ -29,15 +29,15 @@
       ]
     },
     {
-      "id": "kp_present_perfect",
-      "title": "现在完成时",
-      "file": "knowledge/现在完成时.md",
-      "subjectId": "subj_english",
-      "mastery": 70,
+      "id": "kp_pythagorean",
+      "title": "勾股定理",
+      "file": "knowledge/勾股定理.md",
+      "subjectId": "subj_math",
+      "mastery": 75,
       "tags": [
-        "时态",
-        "语法",
-        "高中"
+        "几何",
+        "定理",
+        "初中"
       ]
     },
     {
@@ -53,14 +53,14 @@
       ]
     },
     {
-      "id": "kp_pythagorean",
-      "title": "勾股定理",
-      "file": "knowledge/勾股定理.md",
+      "id": "kp_number_line",
+      "title": "数轴",
+      "file": "knowledge/数轴.md",
       "subjectId": "subj_math",
-      "mastery": 75,
+      "mastery": 90,
       "tags": [
         "几何",
-        "定理",
+        "有理数",
         "初中"
       ]
     },
@@ -77,32 +77,32 @@
       ]
     },
     {
-      "id": "kp_number_line",
-      "title": "数轴",
-      "file": "knowledge/数轴.md",
-      "subjectId": "subj_math",
-      "mastery": 90,
+      "id": "kp_present_perfect",
+      "title": "现在完成时",
+      "file": "knowledge/现在完成时.md",
+      "subjectId": "subj_english",
+      "mastery": 70,
       "tags": [
-        "几何",
-        "有理数",
-        "初中"
+        "时态",
+        "语法",
+        "高中"
       ]
     }
   ],
   "thinking": [
-    {
-      "id": "thinking_speed_of_light",
-      "title": "光速为什么是不可超越的?",
-      "file": "thinking/光速为什么是不可超越的_.md",
-      "subjectId": "subj_physics",
-      "status": "draft"
-    },
     {
       "id": "thinking_negative_times_negative",
       "title": "为什么负负得正?",
       "file": "thinking/为什么负负得正_.md",
       "subjectId": "subj_math",
       "status": "reflected"
+    },
+    {
+      "id": "thinking_speed_of_light",
+      "title": "光速为什么是不可超越的?",
+      "file": "thinking/光速为什么是不可超越的_.md",
+      "subjectId": "subj_physics",
+      "status": "draft"
     }
   ],
   "wrong": [
@@ -123,10 +123,10 @@
   ],
   "chats": [
     {
-      "id": "chat_a7b12d262d40",
+      "id": "chat_24214879a17e",
       "title": "关于勾股定理的讨论",
       "file": "chats/关于勾股定理的讨论.md"
     }
   ],
-  "updatedAt": "2026-07-12T08:36:52.048Z"
+  "updatedAt": "2026-07-12T08:48:27.786Z"
 }
