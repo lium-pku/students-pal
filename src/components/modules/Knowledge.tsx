@@ -254,7 +254,7 @@ export function KnowledgeModule({ subjects, onAskAI }: KnowledgeModuleProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {points.map((p) => {
             const subj = p.subjectId ? subjectMap.get(p.subjectId) : null
-            const tags = p.tags ? p.tags.split(',').filter(Boolean) : []
+            const tags = Array.isArray(p.tags) ? p.tags : (p.tags ? p.tags.split(',').filter(Boolean) : [])
             return (
               <Card
                 key={p.id}
@@ -383,7 +383,7 @@ export function KnowledgeModule({ subjects, onAskAI }: KnowledgeModuleProps) {
                     <div>
                       <h4 className="text-sm font-medium text-muted-foreground mb-2">标签</h4>
                       <div className="flex flex-wrap gap-1.5">
-                        {selected.tags.split(',').filter(Boolean).map((t) => (
+                        {(Array.isArray(selected.tags) ? selected.tags : selected.tags.split(',')).filter(Boolean).map((t) => (
                           <Badge key={t} variant="secondary">
                             <Tag className="h-2.5 w-2.5 mr-1" />
                             {t}

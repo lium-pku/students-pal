@@ -161,3 +161,57 @@ Stage Summary:
 - P2 完成:完整 PWA 支持,用户可"添加到主屏幕"作为独立 App,离线有兜底页
 - 现在在平板上:iOS Safari 分享→添加到主屏幕,Android Chrome 安装应用,桌面 Chrome/Edge 地址栏安装
 - 文档更新:REQUIREMENTS.md 5.2/5.3/5.4(PWA 新章节)/5.5/5.6 + 变更日志 v1.2
+
+---
+Task ID: v2-karpathy-migration
+Agent: main
+Task: v2.0 架构重构 — 从 SQLite/Prisma 迁移到 Karpathy llm-wiki 式文件存储
+
+Work Log:
+- 安装 gray-matter(YAML frontmatter 解析库)
+- 创建 vault/ 目录结构(5 个子目录:subjects/knowledge/thinking/wrong/chats)
+- 实现 src/lib/vault.ts(1057 行):完整的文件存储数据层
+  * 5 个实体管理(subjects/knowledge/thinking/wrongQuestions/chats)
+  * 每个实体的 CRUD + 列表 + 过滤 + 搜索
+  * 知识点关联管理(addRelation/removeRelationByEndpoints)
+  * 索引系统(.index.json,每次 getIndex 时重建,不缓存避免外部修改不一致)
+  * frontmatter 格式:id/type/subject/tags/mastery/related/status/ai-mode/ai-reflection 等
+  * 文件命名:sanitizeFilename(title),title 变更时自动重命名
+- 迁移全部 17 个 API 路由到使用 vault:
+  * subjects/route.ts + [id]/route.ts
+  * knowledge/route.ts + [id]/route.ts + [id]/connect/route.ts + relations/[relId]/route.ts
+  * thinking/route.ts + [id]/route.ts + [id]/reflect/route.ts
+  * wrong-questions/route.ts + [id]/route.ts + [id]/explain/route.ts
+  * ai/chat/route.ts + ai/search/route.ts(未变) + chat-sessions/[id]/route.ts
+  * stats/route.ts
+- 重写 reset-data.ts:从写 SQLite 改为写 Markdown 文件
+- 创建 tests/integration/__mocks__/vault.ts:mock 文件存储层
+- 重写全部 5 个集成测试文件:mock vault 而非 Prisma
+- 创建 tests/unit/lib/vault.test.ts:26 个单元测试覆盖 vault 的所有实体 CRUD
+- 修复关键 bug:
+  * getIndex 缓存导致外部文件修改不一致 → 改为每次重建
+  * readMarkdown 返回 null 时崩溃 → 加 null 检查
+  * Knowledge 组件 p.tags.split(',') 崩溃(tags 现在是数组) → 加 Array.isArray 检查
+  * relations 删除接口从 relId 改为 fromId+toId query 参数
+- 更新 docs/REQUIREMENTS.md:
+  * 6. 技术栈章节:数据存储改为 Markdown 文件 + frontmatter
+  * 7.1 已知限制:更新为文件存储相关
+  * 8. 变更日志:v2.0 架构重构
+
+验证:
+- 214 单元+集成测试全过(含新增 26 个 vault 单元测试)
+- 26 E2E 测试全过
+- 覆盖率:71.53%/59.9%/67.02%/75.67% 达标
+- lint 零错误
+- bun run db:seed 正常生成 Markdown 文件
+- Agent Browser 验证:应用正常渲染,所有功能可用
+
+Stage Summary:
+- v2.0 架构重构完成,数据层从 SQLite 完全迁移到 Markdown 文件
+- 数据现在对 AI 工具(Claude Code/Codex/Kimi)友好:可直接读 vault/ 目录下的 .md 文件
+- 每个实体一个文件,带 YAML frontmatter(元数据) + Markdown body(内容)
+- 文件命名用实体标题,人类可读
+- 关联关系用 frontmatter 的 related 字段表达,不破坏两层目录结构
+- 索引系统(.index.json)让 UI 查询不慢,AI 工具可忽略索引直接读文件
+- 悬空链接暂不自动清理(接受 karpathy 妥协)
+- Prisma/SQLite 依赖已移除(但 prisma 包仍在 package.json,后续可清理)

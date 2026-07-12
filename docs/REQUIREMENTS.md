@@ -302,10 +302,13 @@
 
 - **框架**: Next.js 16 (App Router) + TypeScript 5
 - **样式**: Tailwind CSS 4 + shadcn/ui (New York 风格)
-- **数据库**: Prisma ORM + SQLite
+- **数据存储**: **Markdown 文件 + YAML frontmatter**(karpathy llm-wiki 式,2026-07-10 v2.0 重构)
+  - 不再使用 SQLite/Prisma(已移除)
+  - 数据目录: `vault/`(5 个子目录:subjects/knowledge/thinking/wrong/chats)
+  - 索引文件: `vault/.index.json`(App 维护,AI 工具可忽略)
 - **状态管理**: React hooks(组件内)+ fetch(API 调用)
 - **AI**: z-ai-web-dev-sdk(服务端调用,禁用客户端调用)
-- **Markdown**: react-markdown
+- **Markdown**: react-markdown(渲染)+ gray-matter(frontmatter 解析)
 - **图标**: lucide-react
 
 ---
@@ -314,9 +317,10 @@
 
 ### 7.1 已知限制
 - 单用户(无认证系统)
-- 数据存储在本地 SQLite,无跨设备同步
+- 数据存储在本地文件系统(`vault/` 目录),无跨设备同步(但可 Git 同步)
 - AI 调用无流式输出(整段返回)
 - 联网搜索结果不持久化(每次重新搜索)
+- 悬空链接(引用的文件被删)当前不自动清理,后续可通过 App 功能或 AI 能力解决
 
 ### 7.2 待办(优先级排序)
 1. **思考笔记 AI 引导的进一步沉淀**(用户明确方向,等 AI 能力迭代):
@@ -339,6 +343,7 @@
 | 2026-07-07 | v1.0 | 初始需求文档,覆盖已实现的全部功能 | agent |
 | 2026-07-07 | v1.1 | P0 平板适配:侧边栏断点改 lg:(1024px);AI 面板断点改 md:(768px)侧边 380px;触摸目标放大至 36px+;hover-only 按钮平板常显 | agent |
 | 2026-07-10 | v1.2 | P1 体验优化:Dialog 自适应(w-95vw+max-w);AutoTextarea 自动撑高;平板字体 15px;触摸设备禁用 hover/长按选中。P2 PWA:manifest+多尺寸图标+Service Worker+离线兜底页+layout 注入 | agent |
+| 2026-07-10 | v2.0 | **架构重构**:数据层从 SQLite/Prisma 迁移到 Markdown 文件 + YAML frontmatter(karpathy llm-wiki 式)。目的:让数据对 AI 工具(Claude Code/Codex/Kimi)友好,可直接读文件。3 个妥协(关联用 frontmatter 引用/接受悬空链接/AI 内容加 status)+ 1 个增强(.index.json 索引) | agent |
 
 ---
 

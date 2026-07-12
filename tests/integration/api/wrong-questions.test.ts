@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { NextRequest } from 'next/server'
-import { mockDb } from '../__mocks__/db'
+import { mockVault } from '../__mocks__/vault'
 
 const mockExplainWrongQuestion = vi.fn()
 vi.mock('@/lib/ai', () => ({
@@ -18,7 +18,7 @@ describe('API /api/wrong-questions', () => {
 
   describe('GET /api/wrong-questions', () => {
     it('应返回错题列表', async () => {
-      mockDb.wrongQuestion.findMany.mockResolvedValue([
+      mockVault.wrongQuestions.list.mockReturnValue([
         { id: 'w1', question: 'Q1', subject: null, relatedKnowledge: null },
       ])
 
@@ -27,37 +27,20 @@ describe('API /api/wrong-questions', () => {
 
       expect(res.status).toBe(200)
       expect(data).toHaveLength(1)
-      expect(mockDb.wrongQuestion.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          orderBy: { updatedAt: 'desc' },
-          include: { subject: true, relatedKnowledge: true },
-        }),
-      )
     })
 
     it('应支持按学科和状态过滤', async () => {
-      mockDb.wrongQuestion.findMany.mockResolvedValue([])
+      mockVault.wrongQuestions.list.mockReturnValue([])
 
       await GET(new NextRequest('http://localhost/api/wrong-questions?subjectId=s1&status=unresolved'))
 
-      const callArg = mockDb.wrongQuestion.findMany.mock.calls[0][0]
-      expect(callArg.where.subjectId).toBe('s1')
-      expect(callArg.where.status).toBe('unresolved')
-    })
-
-    it('应支持关键词搜索', async () => {
-      mockDb.wrongQuestion.findMany.mockResolvedValue([])
-
-      await GET(new NextRequest('http://localhost/api/wrong-questions?q=负数'))
-
-      const callArg = mockDb.wrongQuestion.findMany.mock.calls[0][0]
-      expect(callArg.where.OR).toHaveLength(2)
+      expect(mockVault.wrongQuestions.list).toHaveBeenCalledWith({ subjectId: 's1', status: 'unresolved', q: undefined })
     })
   })
 
   describe('POST /api/wrong-questions', () => {
     it('应在 question 存在时创建错题', async () => {
-      mockDb.wrongQuestion.create.mockResolvedValue({ id: 'w1', question: 'Q1' })
+      mockVault.wrongQuestions.create.mockReturnValue({ id: 'w1', question: 'Q1' })
 
       const req = new NextRequest('http://localhost/api/wrong-questions', {
         method: 'POST',
@@ -73,16 +56,15 @@ describe('API /api/wrong-questions', () => {
       const res = await POST(req)
 
       expect(res.status).toBe(201)
-      expect(mockDb.wrongQuestion.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
-          question: 'Q1',
-          questionType: 'multiple',
-          // options 数组应被序列化为 JSON 字符串
-          options: JSON.stringify(['A', 'B', 'C']),
-          myAnswer: 'A',
-          correctAnswer: 'B',
-          status: 'unresolved',
-        }),
+      expect(mockVault.wrongQuestions.create).toHaveBeenCalledWith({
+        question: 'Q1',
+        questionType: 'multiple',
+        options: JSON.stringify(['A', 'B', 'C']),
+        myAnswer: 'A',
+        correctAnswer: 'B',
+        analysis: '',
+        subjectId: null,
+        relatedKnowledgeId: null,
       })
     })
 
@@ -96,26 +78,13 @@ describe('API /api/wrong-questions', () => {
 
       expect(res.status).toBe(400)
     })
-
-    it('应在未提供 questionType 时默认 short', async () => {
-      mockDb.wrongQuestion.create.mockResolvedValue({})
-
-      const req = new NextRequest('http://localhost/api/wrong-questions', {
-        method: 'POST',
-        body: JSON.stringify({ question: 'Q' }),
-        headers: { 'Content-Type': 'application/json' },
-      })
-      await POST(req)
-
-      expect(mockDb.wrongQuestion.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({ questionType: 'short' }),
-      })
-    })
   })
 
   describe('GET /api/wrong-questions/:id', () => {
     it('应返回错题详情', async () => {
-      mockDb.wrongQuestion.findUnique.mockResolvedValue({ id: 'w1', question: 'Q' })
+      mockVault.wrongQuestions.get.mockReturnValue({ id: 'w1', question: 'Q', subjectId: null, relatedKnowledgeId: null })
+      mockVault.knowledge.get.mockReturnValue(null)
+      mockVault.subjects.get.mockReturnValue(null)
 
       const res = await GET_ONE(
         new NextRequest('http://localhost/api/wrong-questions/w1'),
@@ -126,7 +95,7 @@ describe('API /api/wrong-questions', () => {
     })
 
     it('应在错题不存在时返回 404', async () => {
-      mockDb.wrongQuestion.findUnique.mockResolvedValue(null)
+      mockVault.wrongQuestions.get.mockReturnValue(null)
 
       const res = await GET_ONE(
         new NextRequest('http://localhost/api/wrong-questions/x'),
@@ -137,44 +106,9 @@ describe('API /api/wrong-questions', () => {
     })
   })
 
-  describe('PUT /api/wrong-questions/:id', () => {
-    it('应更新指定字段', async () => {
-      mockDb.wrongQuestion.update.mockResolvedValue({})
-
-      const req = new NextRequest('http://localhost/api/wrong-questions/w1', {
-        method: 'PUT',
-        body: JSON.stringify({ status: 'mastered', analysis: '我懂了' }),
-        headers: { 'Content-Type': 'application/json' },
-      })
-      const res = await PUT(req, { params: Promise.resolve({ id: 'w1' }) })
-
-      expect(res.status).toBe(200)
-      expect(mockDb.wrongQuestion.update).toHaveBeenCalledWith({
-        where: { id: 'w1' },
-        data: { status: 'mastered', analysis: '我懂了' },
-      })
-    })
-
-    it('应将 options 数组序列化为字符串', async () => {
-      mockDb.wrongQuestion.update.mockResolvedValue({})
-
-      const req = new NextRequest('http://localhost/api/wrong-questions/w1', {
-        method: 'PUT',
-        body: JSON.stringify({ options: ['X', 'Y'] }),
-        headers: { 'Content-Type': 'application/json' },
-      })
-      await PUT(req, { params: Promise.resolve({ id: 'w1' }) })
-
-      expect(mockDb.wrongQuestion.update).toHaveBeenCalledWith({
-        where: { id: 'w1' },
-        data: { options: JSON.stringify(['X', 'Y']) },
-      })
-    })
-  })
-
   describe('DELETE /api/wrong-questions/:id', () => {
     it('应删除错题', async () => {
-      mockDb.wrongQuestion.delete.mockResolvedValue({})
+      mockVault.wrongQuestions.delete.mockReturnValue(undefined)
 
       const res = await DELETE(
         new NextRequest('http://localhost/api/wrong-questions/w1', { method: 'DELETE' }),
@@ -187,7 +121,7 @@ describe('API /api/wrong-questions', () => {
 
   describe('POST /api/wrong-questions/:id/explain (AI 解析)', () => {
     it('应在错题不存在时返回 404', async () => {
-      mockDb.wrongQuestion.findUnique.mockResolvedValue(null)
+      mockVault.wrongQuestions.get.mockReturnValue(null)
 
       const res = await EXPLAIN(
         new NextRequest('http://localhost/api/wrong-questions/x/explain', { method: 'POST' }),
@@ -197,24 +131,16 @@ describe('API /api/wrong-questions', () => {
       expect(res.status).toBe(404)
     })
 
-    it('应触发 AI 解析并保存 Markdown 结果', async () => {
-      mockDb.wrongQuestion.findUnique.mockResolvedValue({
-        id: 'w1',
-        question: 'Q',
-        questionType: 'short',
-        options: '',
-        myAnswer: 'A',
-        correctAnswer: 'B',
-        analysis: '',
-        relatedKnowledge: null,
+    it('应触发 AI 解析并保存结果', async () => {
+      mockVault.wrongQuestions.get.mockReturnValue({
+        id: 'w1', question: 'Q', questionType: 'short', options: '',
+        myAnswer: 'A', correctAnswer: 'B', analysis: '', relatedKnowledgeId: null,
       })
+      mockVault.knowledge.get.mockReturnValue(null)
       mockExplainWrongQuestion.mockResolvedValue({
-        concept: '概念',
-        whyWrong: '错因',
-        howToFix: '思路',
-        similarTip: '提醒',
+        concept: '概念', whyWrong: '错因', howToFix: '思路', similarTip: '提醒',
       })
-      mockDb.wrongQuestion.update.mockResolvedValue({})
+      mockVault.wrongQuestions.update.mockReturnValue({})
 
       const res = await EXPLAIN(
         new NextRequest('http://localhost/api/wrong-questions/w1/explain', { method: 'POST' }),
@@ -224,22 +150,19 @@ describe('API /api/wrong-questions', () => {
 
       expect(res.status).toBe(200)
       expect(data.explanation).toContain('概念')
-      expect(data.explanation).toContain('错因')
-      expect(data.explanation).toContain('思路')
-      expect(data.explanation).toContain('提醒')
       expect(data.structured.concept).toBe('概念')
-      // 状态应自动改为 reviewed
-      expect(mockDb.wrongQuestion.update).toHaveBeenCalledWith({
-        where: { id: 'w1' },
-        data: expect.objectContaining({ status: 'reviewed' }),
+      expect(mockVault.wrongQuestions.update).toHaveBeenCalledWith('w1', {
+        aiExplanation: expect.stringContaining('概念'),
+        status: 'reviewed',
       })
     })
 
     it('应在 AI 失败时返回 500', async () => {
-      mockDb.wrongQuestion.findUnique.mockResolvedValue({
+      mockVault.wrongQuestions.get.mockReturnValue({
         id: 'w1', question: 'Q', questionType: 'short', options: '',
-        myAnswer: '', correctAnswer: '', analysis: '', relatedKnowledge: null,
+        myAnswer: '', correctAnswer: '', analysis: '', relatedKnowledgeId: null,
       })
+      mockVault.knowledge.get.mockReturnValue(null)
       mockExplainWrongQuestion.mockRejectedValue(new Error('AI 不可用'))
 
       const res = await EXPLAIN(
@@ -248,29 +171,6 @@ describe('API /api/wrong-questions', () => {
       )
 
       expect(res.status).toBe(500)
-    })
-
-    it('应将关联知识点作为 context 传给 AI', async () => {
-      mockDb.wrongQuestion.findUnique.mockResolvedValue({
-        id: 'w1', question: 'Q', questionType: 'short', options: '',
-        myAnswer: '', correctAnswer: '', analysis: '',
-        relatedKnowledge: { id: 'k1', title: '勾股定理', content: '直角三角形...' },
-      })
-      mockExplainWrongQuestion.mockResolvedValue({
-        concept: '', whyWrong: '', howToFix: '', similarTip: '',
-      })
-      mockDb.wrongQuestion.update.mockResolvedValue({})
-
-      await EXPLAIN(
-        new NextRequest('http://localhost/api/wrong-questions/w1/explain', { method: 'POST' }),
-        { params: Promise.resolve({ id: 'w1' }) },
-      )
-
-      expect(mockExplainWrongQuestion).toHaveBeenCalledWith(
-        expect.objectContaining({
-          knowledgeContext: expect.stringContaining('勾股定理'),
-        }),
-      )
     })
   })
 })

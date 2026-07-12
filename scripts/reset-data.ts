@@ -1,115 +1,90 @@
 /**
- * 测试数据重置脚本
+ * 测试数据重置脚本(v2.0 文件存储版)
  *
  * 用途:
- *   1. 清空所有业务表(保留表结构)
- *   2. 注入一组"演示数据",让用户打开应用就能直观看到功能效果
+ *   1. 清空 vault/ 目录下所有 Markdown 文件
+ *   2. 注入一组"演示数据"
  *
  * 使用场景:
- *   - 每次 E2E 测试运行后清理残留(在 playwright globalTeardown 中调用)
+ *   - 每次 E2E 测试运行后清理残留
  *   - 开发者手动重置:`bun run db:seed`
  *   - Agent 完成任务前的清理步骤
- *
- * 数据特点:
- *   - 学科: 数学、物理、英语(覆盖文科/理科)
- *   - 知识点: 含关联关系(勾股定理 ↔ 数轴 ↔ 乘法交换律)
- *   - 思考笔记: 1 条已含 AI 引导,1 条草稿
- *   - 错题: 1 条已 AI 解析,1 条未处理
- *   - AI 对话: 1 条带 2 条消息的会话
- *
- * 用法:
- *   bun run scripts/reset-data.ts              # 清空 + 注入演示数据
- *   bun run scripts/reset-data.ts --clear-only # 仅清空,不注入
  */
 
-import { db } from '../src/lib/db'
+import fs from 'fs'
+import path from 'path'
+import { subjects, knowledge, thinking, wrongQuestions, chats, rebuildIndex } from '../src/lib/vault'
+
+const VAULT_DIR = path.join(process.cwd(), 'vault')
 
 // ============ 演示数据定义 ============
 
-const SUBJECTS = [
-  { id: 'demo-subj-math', name: '数学', color: '#16a34a', icon: '📐' },
-  { id: 'demo-subj-physics', name: '物理', color: '#dc2626', icon: '⚛️' },
-  { id: 'demo-subj-english', name: '英语', color: '#7c3aed', icon: '📚' },
+const DEMO_SUBJECTS = [
+  { id: 'subj_math', name: '数学', color: '#16a34a', icon: '📐' },
+  { id: 'subj_physics', name: '物理', color: '#dc2626', icon: '⚛️' },
+  { id: 'subj_english', name: '英语', color: '#7c3aed', icon: '📚' },
 ]
 
-const KNOWLEDGE_POINTS = [
+const DEMO_KNOWLEDGE = [
   {
-    id: 'demo-kp-pyththagorean',
+    id: 'kp_pythagorean',
     title: '勾股定理',
     content: '直角三角形两直角边的平方和等于斜边的平方:\n\n**a² + b² = c²**\n\n其中 c 为斜边。这是欧几里得几何中最基础的定理之一,由古希腊数学家毕达哥拉斯发现(公元前 6 世纪)。',
-    tags: '几何,定理,初中',
-    subjectId: 'demo-subj-math',
+    tags: ['几何', '定理', '初中'],
+    subjectId: 'subj_math',
     mastery: 75,
   },
   {
-    id: 'demo-kp-number-line',
+    id: 'kp_number_line',
     title: '数轴',
     content: '数轴是表示实数的一条直线,规定了:\n\n1. **原点**(0)\n2. **正方向**(通常向右)\n3. **单位长度**\n\n正数在原点右侧,负数在左侧。数轴是理解有理数运算的重要工具。',
-    tags: '几何,有理数,初中',
-    subjectId: 'demo-subj-math',
+    tags: ['几何', '有理数', '初中'],
+    subjectId: 'subj_math',
     mastery: 90,
   },
   {
-    id: 'demo-kp-multiplication',
+    id: 'kp_multiplication',
     title: '乘法交换律',
     content: '**a × b = b × a**\n\n乘法运算的结果与因子的顺序无关。这是乘法的基本运算律之一,与结合律、分配律共同构成乘法运算的基础。',
-    tags: '运算律,初中',
-    subjectId: 'demo-subj-math',
+    tags: ['运算律', '初中'],
+    subjectId: 'subj_math',
     mastery: 95,
   },
   {
-    id: 'demo-kp-newton-second',
+    id: 'kp_newton_second',
     title: '牛顿第二定律',
     content: '物体的加速度与所受合外力成正比,与物体质量成反比:\n\n**F = ma**\n\n其中 F 为合外力(N),m 为质量(kg),a 为加速度(m/s²)。',
-    tags: '力学,定律,高中',
-    subjectId: 'demo-subj-physics',
+    tags: ['力学', '定律', '高中'],
+    subjectId: 'subj_physics',
     mastery: 60,
   },
   {
-    id: 'demo-kp-inertia',
+    id: 'kp_inertia',
     title: '惯性',
     content: '物体保持原有运动状态的性质称为惯性。质量是惯性大小的唯一量度。\n\n- 静止的物体保持静止\n- 运动的物体保持匀速直线运动\n- 除非受到合外力作用',
-    tags: '力学,概念,高中',
-    subjectId: 'demo-subj-physics',
+    tags: ['力学', '概念', '高中'],
+    subjectId: 'subj_physics',
     mastery: 80,
   },
   {
-    id: 'demo-kp-present-perfect',
+    id: 'kp_present_perfect',
     title: '现在完成时',
     content: '结构: **have/has + 过去分词**\n\n用法:\n1. 表示过去发生且对现在有影响的动作\n2. 表示从过去持续到现在的动作\n\n关键词: already, yet, ever, never, since, for',
-    tags: '时态,语法,高中',
-    subjectId: 'demo-subj-english',
+    tags: ['时态', '语法', '高中'],
+    subjectId: 'subj_english',
     mastery: 70,
   },
 ]
 
-const RELATIONS = [
-  {
-    fromId: 'demo-kp-number-line',
-    toId: 'demo-kp-pyththagorean',
-    type: 'related',
-    description: '数轴可用于表示勾股定理中的边长',
-    aiGenerated: true,
-  },
-  {
-    fromId: 'demo-kp-pyththagorean',
-    toId: 'demo-kp-multiplication',
-    type: 'related',
-    description: '勾股定理中涉及平方运算',
-    aiGenerated: true,
-  },
-  {
-    fromId: 'demo-kp-inertia',
-    toId: 'demo-kp-newton-second',
-    type: 'prerequisite',
-    description: '理解惯性是理解牛顿第二定律的前提',
-    aiGenerated: false,
-  },
+const DEMO_RELATIONS = [
+  { fromId: 'kp_number_line', toId: 'kp_pythagorean', type: 'related', description: '数轴可用于表示勾股定理中的边长', aiGenerated: true },
+  { fromId: 'kp_pythagorean', toId: 'kp_multiplication', type: 'related', description: '勾股定理中涉及平方运算', aiGenerated: true },
+  { fromId: 'kp_inertia', toId: 'kp_newton_second', type: 'prerequisite', description: '理解惯性是理解牛顿第二定律的前提', aiGenerated: false },
 ]
 
-const THINKING_NOTES = [
+const DEMO_THINKING = [
   {
-    id: 'demo-note-1',
+    id: 'thinking_negative_times_negative',
     title: '为什么负负得正?',
     question: '学生在学负数运算时总是问:为什么 -2 × -3 = 6?',
     content: '我觉得负负得正有点像"否定否定就是肯定",比如说"我不讨厌你"等于"我喜欢你"。但这是不是只是一个类比?数学上凭什么这样规定?',
@@ -135,25 +110,23 @@ const THINKING_NOTES = [
 期待你的思考!`,
     aiMode: 'socratic',
     status: 'reflected',
-    subjectId: 'demo-subj-math',
-    relatedKnowledgeIds: '',
+    subjectId: 'subj_math',
   },
   {
-    id: 'demo-note-2',
+    id: 'thinking_speed_of_light',
     title: '光速为什么是不可超越的?',
     question: '看到科幻电影里的曲速引擎,想知道为什么物理学家说光速是宇宙的速度上限?',
     content: '',
     aiReflection: '',
     aiMode: 'socratic',
     status: 'draft',
-    subjectId: 'demo-subj-physics',
-    relatedKnowledgeIds: '',
+    subjectId: 'subj_physics',
   },
 ]
 
-const WRONG_QUESTIONS = [
+const DEMO_WRONG = [
   {
-    id: 'demo-wq-1',
+    id: 'wq_negative_mult',
     question: '计算: (-2) × (-3) = ?',
     questionType: 'short',
     options: '',
@@ -174,11 +147,11 @@ const WRONG_QUESTIONS = [
 ## 易错提醒
 负数乘法:负负得正,正负得负。`,
     status: 'reviewed',
-    subjectId: 'demo-subj-math',
-    relatedKnowledgeId: 'demo-kp-multiplication',
+    subjectId: 'subj_math',
+    relatedKnowledgeId: 'kp_multiplication',
   },
   {
-    id: 'demo-wq-2',
+    id: 'wq_newton_second',
     question: '一个 2kg 的物体受到 10N 的水平拉力,其加速度是多少?',
     questionType: 'short',
     options: '',
@@ -187,90 +160,120 @@ const WRONG_QUESTIONS = [
     analysis: '',
     aiExplanation: '',
     status: 'unresolved',
-    subjectId: 'demo-subj-physics',
-    relatedKnowledgeId: 'demo-kp-newton-second',
+    subjectId: 'subj_physics',
+    relatedKnowledgeId: 'kp_newton_second',
   },
 ]
 
-const CHAT_SESSIONS = [
-  {
-    id: 'demo-chat-1',
-    title: '关于勾股定理的讨论',
-    context: JSON.stringify({ type: 'knowledge', title: '勾股定理', id: 'demo-kp-pyththagorean' }),
-  },
-]
-
-const CHAT_MESSAGES = [
-  {
-    id: 'demo-msg-1',
-    sessionId: 'demo-chat-1',
-    role: 'user',
-    content: '勾股定理只能用于直角三角形吗?',
-  },
-  {
-    id: 'demo-msg-2',
-    sessionId: 'demo-chat-1',
-    role: 'assistant',
-    content: '好问题!勾股定理本身确实只适用于直角三角形。但有趣的是,对于任意三角形,有一个推广叫**余弦定理**:\n\nc² = a² + b² - 2ab·cos(C)\n\n当 C = 90° 时,cos(90°) = 0,余弦定理就退化成了勾股定理。所以勾股定理可以看作余弦定理的特例。\n\n你想继续了解余弦定理吗?',
-  },
-]
-
-// ============ 重置逻辑(可被 import 调用) ============
+// ============ 重置逻辑 ============
 
 export async function resetData() {
-  console.log('🧹 开始清空数据库...')
+  console.log('🧹 开始清空 vault/ 目录...')
 
-  // 按依赖顺序删除(先删子表)
-  await db.chatMessage.deleteMany({})
-  await db.chatSession.deleteMany({})
-  await db.knowledgeRelation.deleteMany({})
-  await db.wrongQuestion.deleteMany({})
-  await db.thinkingNote.deleteMany({})
-  await db.knowledgePoint.deleteMany({})
-  await db.subject.deleteMany({})
-  console.log('   ✓ 已清空所有业务表')
+  // 清空所有 .md 文件(保留目录结构)
+  for (const subdir of ['subjects', 'knowledge', 'thinking', 'wrong', 'chats']) {
+    const dir = path.join(VAULT_DIR, subdir)
+    if (fs.existsSync(dir)) {
+      for (const file of fs.readdirSync(dir)) {
+        if (file.endsWith('.md')) {
+          fs.unlinkSync(path.join(dir, file))
+        }
+      }
+    }
+  }
+  // 删除索引
+  const indexFile = path.join(VAULT_DIR, '.index.json')
+  if (fs.existsSync(indexFile)) fs.unlinkSync(indexFile)
+  console.log('   ✓ 已清空所有 Markdown 文件')
 
   console.log('🌱 开始注入演示数据...')
 
   // 注入学科
-  for (const s of SUBJECTS) {
-    await db.subject.create({ data: s })
+  for (const s of DEMO_SUBJECTS) {
+    subjects.create({ id: s.id, name: s.name, color: s.color, icon: s.icon })
   }
-  console.log(`   ✓ 注入 ${SUBJECTS.length} 个学科`)
+  console.log(`   ✓ 注入 ${DEMO_SUBJECTS.length} 个学科`)
 
   // 注入知识点
-  for (const kp of KNOWLEDGE_POINTS) {
-    await db.knowledgePoint.create({ data: kp })
+  for (const kp of DEMO_KNOWLEDGE) {
+    knowledge.create({
+      id: kp.id,
+      title: kp.title,
+      content: kp.content,
+      tags: kp.tags,
+      subjectId: kp.subjectId,
+      mastery: kp.mastery,
+    })
   }
-  console.log(`   ✓ 注入 ${KNOWLEDGE_POINTS.length} 个知识点`)
+  console.log(`   ✓ 注入 ${DEMO_KNOWLEDGE.length} 个知识点`)
 
   // 注入关联
-  for (const r of RELATIONS) {
-    await db.knowledgeRelation.create({ data: r })
+  for (const r of DEMO_RELATIONS) {
+    knowledge.addRelation({
+      fromId: r.fromId,
+      toId: r.toId,
+      type: r.type,
+      description: r.description,
+      aiGenerated: r.aiGenerated,
+    })
   }
-  console.log(`   ✓ 注入 ${RELATIONS.length} 条知识点关联`)
+  console.log(`   ✓ 注入 ${DEMO_RELATIONS.length} 条知识点关联`)
 
   // 注入思考笔记
-  for (const n of THINKING_NOTES) {
-    await db.thinkingNote.create({ data: n })
+  for (const n of DEMO_THINKING) {
+    const note = thinking.create({
+      id: n.id,
+      title: n.title,
+      question: n.question,
+      content: n.content,
+      subjectId: n.subjectId,
+    })
+    // 更新 AI 引导内容(因为 create 不支持设置 aiReflection)
+    thinking.update(note.id, {
+      aiReflection: n.aiReflection,
+      aiMode: n.aiMode,
+      status: n.status,
+    })
   }
-  console.log(`   ✓ 注入 ${THINKING_NOTES.length} 条思考笔记`)
+  console.log(`   ✓ 注入 ${DEMO_THINKING.length} 条思考笔记`)
 
   // 注入错题
-  for (const w of WRONG_QUESTIONS) {
-    await db.wrongQuestion.create({ data: w })
+  for (const w of DEMO_WRONG) {
+    const wq = wrongQuestions.create({
+      id: w.id,
+      question: w.question,
+      questionType: w.questionType,
+      options: w.options,
+      myAnswer: w.myAnswer,
+      correctAnswer: w.correctAnswer,
+      analysis: w.analysis,
+      subjectId: w.subjectId,
+      relatedKnowledgeId: w.relatedKnowledgeId,
+    })
+    // 更新 AI 解析
+    if (w.aiExplanation) {
+      wrongQuestions.update(wq.id, { aiExplanation: w.aiExplanation, status: w.status })
+    }
   }
-  console.log(`   ✓ 注入 ${WRONG_QUESTIONS.length} 道错题`)
+  console.log(`   ✓ 注入 ${DEMO_WRONG.length} 道错题`)
 
-  // 注入 AI 对话
-  for (const c of CHAT_SESSIONS) {
-    await db.chatSession.create({ data: c })
-  }
-  for (const m of CHAT_MESSAGES) {
-    await db.chatMessage.create({ data: m })
-  }
-  console.log(`   ✓ 注入 ${CHAT_SESSIONS.length} 个 AI 对话会话(${CHAT_MESSAGES.length} 条消息)`)
+  // 注入 AI 对话会话
+  const session = chats.create({ title: '关于勾股定理的讨论' })
+  chats.addMessage(session.id, {
+    role: 'user',
+    content: '勾股定理只能用于直角三角形吗?',
+    meta: '',
+    createdAt: new Date().toISOString(),
+  })
+  chats.addMessage(session.id, {
+    role: 'assistant',
+    content: '好问题!勾股定理本身确实只适用于直角三角形。但有趣的是,对于任意三角形,有一个推广叫**余弦定理**:\n\nc² = a² + b² - 2ab·cos(C)\n\n当 C = 90° 时,cos(90°) = 0,余弦定理就退化成了勾股定理。所以勾股定理可以看作余弦定理的特例。\n\n你想继续了解余弦定理吗?',
+    meta: '',
+    createdAt: new Date().toISOString(),
+  })
+  console.log(`   ✓ 注入 1 个 AI 对话会话(2 条消息)`)
 
+  rebuildIndex()
   console.log('\n✅ 数据重置完成!')
   console.log('   演示数据包含:')
   console.log('   • 3 个学科(数学/物理/英语)')
@@ -280,22 +283,26 @@ export async function resetData() {
   console.log('   • 1 个 AI 对话会话(含 2 条消息)')
 }
 
-// 仅清空,不注入(用于测试 teardown)
 export async function clearData() {
-  console.log('🧹 清空所有业务数据(不注入演示数据)...')
-  await db.chatMessage.deleteMany({})
-  await db.chatSession.deleteMany({})
-  await db.knowledgeRelation.deleteMany({})
-  await db.wrongQuestion.deleteMany({})
-  await db.thinkingNote.deleteMany({})
-  await db.knowledgePoint.deleteMany({})
-  await db.subject.deleteMany({})
+  console.log('🧹 清空所有 Markdown 文件(不注入演示数据)...')
+  for (const subdir of ['subjects', 'knowledge', 'thinking', 'wrong', 'chats']) {
+    const dir = path.join(VAULT_DIR, subdir)
+    if (fs.existsSync(dir)) {
+      for (const file of fs.readdirSync(dir)) {
+        if (file.endsWith('.md')) {
+          fs.unlinkSync(path.join(dir, file))
+        }
+      }
+    }
+  }
+  const indexFile = path.join(VAULT_DIR, '.index.json')
+  if (fs.existsSync(indexFile)) fs.unlinkSync(indexFile)
+  rebuildIndex()
   console.log('✅ 已清空')
 }
 
-// ============ CLI 入口(直接运行脚本时) ============
-// 仅当本文件是入口(通过 `bun run scripts/reset-data.ts` 调用)时执行
-// 被 import 时不执行,由调用方决定何时调用 resetData() / clearData()
+// ============ CLI 入口 ============
+
 const isMainModule = (() => {
   try {
     return require.main === module
@@ -307,12 +314,8 @@ const isMainModule = (() => {
 if (isMainModule) {
   const mode = process.argv[2]
   const run = mode === '--clear-only' ? clearData : resetData
-  run()
-    .catch((e) => {
-      console.error('失败:', e)
-      process.exit(1)
-    })
-    .finally(async () => {
-      await db.$disconnect()
-    })
+  run().catch((e) => {
+    console.error('失败:', e)
+    process.exit(1)
+  })
 }

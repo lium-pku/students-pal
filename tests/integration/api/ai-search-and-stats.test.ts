@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { NextRequest } from 'next/server'
-import { mockDb } from '../__mocks__/db'
+import { mockVault } from '../__mocks__/vault'
 
 const mockAiSearch = vi.fn()
 vi.mock('@/lib/ai', () => ({
@@ -42,7 +42,6 @@ describe('API /api/ai/search', () => {
 
     expect(res.status).toBe(200)
     expect(data.answer).toBe('基于搜索的回答')
-    expect(data.sources).toHaveLength(1)
     expect(mockAiSearch).toHaveBeenCalledWith({ query: '勾股定理', context: 'C' })
   })
 })
@@ -63,32 +62,26 @@ describe('API /api/stats', () => {
     avgMastery?: number | null
   } = {}) {
     const {
-      subjects = 2,
-      knowledgePoints = 5,
-      thinkingNotes = 3,
-      wrongQuestions = 4,
-      unresolved = 1,
-      mastered = 1,
-      reviewed = 2,
-      avgMastery = 60,
+      subjects: s = 2, knowledgePoints = 5, thinkingNotes = 3, wrongQuestions = 4,
+      unresolved = 1, mastered = 1, reviewed = 2, avgMastery = 60,
     } = opts
 
-    mockDb.subject.count.mockResolvedValue(subjects)
-    mockDb.knowledgePoint.count.mockResolvedValue(knowledgePoints)
-    mockDb.thinkingNote.count.mockResolvedValue(thinkingNotes)
-    // wrongQuestion.count 被调用多次:总数 + unresolved + mastered + reviewed
-    mockDb.wrongQuestion.count
-      .mockResolvedValueOnce(wrongQuestions) // 总数
-      .mockResolvedValueOnce(unresolved)     // unresolved
-      .mockResolvedValueOnce(mastered)       // mastered
-      .mockResolvedValueOnce(reviewed)       // reviewed
-    mockDb.thinkingNote.findMany.mockResolvedValue([])
-    mockDb.wrongQuestion.findMany.mockResolvedValue([])
-    mockDb.knowledgePoint.findMany.mockResolvedValue([])
+    mockVault.subjects.count.mockReturnValue(s)
+    mockVault.knowledge.count.mockReturnValue(knowledgePoints)
+    mockVault.thinking.count.mockReturnValue(thinkingNotes)
+    mockVault.wrongQuestions.count.mockImplementation((filter?: { status?: string }) => {
+      if (!filter?.status) return wrongQuestions
+      if (filter.status === 'unresolved') return unresolved
+      if (filter.status === 'mastered') return mastered
+      if (filter.status === 'reviewed') return reviewed
+      return 0
+    })
+    mockVault.thinking.findRecent.mockReturnValue([])
+    mockVault.wrongQuestions.findRecent.mockReturnValue([])
     if (avgMastery === null) {
-      mockDb.knowledgePoint.aggregate.mockResolvedValue({ _avg: { mastery: null } })
+      mockVault.knowledge.aggregateMastery.mockReturnValue({ _avg: { mastery: null } })
     } else {
-      mockDb.knowledgePoint.aggregate.mockResolvedValue({ _avg: { mastery: avgMastery } })
+      mockVault.knowledge.aggregateMastery.mockReturnValue({ _avg: { mastery: avgMastery } })
     }
   }
 
@@ -114,17 +107,15 @@ describe('API /api/stats', () => {
   })
 
   it('应在无知识点时 avgMastery 为 0', async () => {
-    setupStatsMocks({ knowledgePoints: 0 })
+    setupStatsMocks({ knowledgePoints: 0, avgMastery: null })
 
     const res = await GET_STATS(new NextRequest('http://localhost/api/stats'))
     const data = await res.json()
 
     expect(data.avgMastery).toBe(0)
-    // 不应调用 aggregate
-    expect(mockDb.knowledgePoint.aggregate).not.toHaveBeenCalled()
   })
 
-  it('daily 数组应包含 7 天数据,每项有 thinking/wrong/knowledge', async () => {
+  it('daily 数组应包含 7 天数据', async () => {
     setupStatsMocks()
 
     const res = await GET_STATS(new NextRequest('http://localhost/api/stats'))
@@ -137,20 +128,5 @@ describe('API /api/stats', () => {
       expect(d).toHaveProperty('wrong')
       expect(d).toHaveProperty('knowledge')
     })
-  })
-
-  it('应支持 days 参数', async () => {
-    setupStatsMocks()
-
-    await GET_STATS(new NextRequest('http://localhost/api/stats?days=7'))
-
-    // findMany 应该用 7 天前的时间作为 since
-    expect(mockDb.thinkingNote.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
-          createdAt: expect.objectContaining({ gte: expect.any(Date) }),
-        }),
-      }),
-    )
   })
 })

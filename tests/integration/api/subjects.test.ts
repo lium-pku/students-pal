@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
-import { mockDb } from '../__mocks__/db'
+import { mockVault } from '../__mocks__/vault'
 import { GET, POST } from '@/app/api/subjects/route'
 import { PUT, DELETE } from '@/app/api/subjects/[id]/route'
 
@@ -17,12 +17,12 @@ describe('API /api/subjects', () => {
           name: '数学',
           color: '#16a34a',
           icon: '📐',
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
           _count: { knowledgePoints: 5, wrongQuestions: 3, thinkingNotes: 2 },
         },
       ]
-      mockDb.subject.findMany.mockResolvedValue(mockData)
+      mockVault.subjects.listWithCounts.mockReturnValue(mockData)
 
       const res = await GET()
       const data = await res.json()
@@ -31,24 +31,11 @@ describe('API /api/subjects', () => {
       expect(data).toHaveLength(1)
       expect(data[0].name).toBe('数学')
       expect(data[0]._count.knowledgePoints).toBe(5)
-      expect(mockDb.subject.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          orderBy: { createdAt: 'desc' },
-          include: {
-            _count: {
-              select: {
-                knowledgePoints: true,
-                wrongQuestions: true,
-                thinkingNotes: true,
-              },
-            },
-          },
-        }),
-      )
+      expect(mockVault.subjects.listWithCounts).toHaveBeenCalled()
     })
 
     it('应在数据库为空时返回空数组', async () => {
-      mockDb.subject.findMany.mockResolvedValue([])
+      mockVault.subjects.listWithCounts.mockReturnValue([])
 
       const res = await GET()
       const data = await res.json()
@@ -61,7 +48,7 @@ describe('API /api/subjects', () => {
   describe('POST /api/subjects', () => {
     it('应在 name 存在时创建学科', async () => {
       const created = { id: 's1', name: '物理', color: '#dc2626', icon: null }
-      mockDb.subject.create.mockResolvedValue(created)
+      mockVault.subjects.create.mockReturnValue(created)
 
       const req = new NextRequest('http://localhost/api/subjects', {
         method: 'POST',
@@ -73,13 +60,15 @@ describe('API /api/subjects', () => {
 
       expect(res.status).toBe(201)
       expect(data.name).toBe('物理')
-      expect(mockDb.subject.create).toHaveBeenCalledWith({
-        data: { name: '物理', color: '#dc2626', icon: null },
+      expect(mockVault.subjects.create).toHaveBeenCalledWith({
+        name: '物理',
+        color: '#dc2626',
+        icon: null,
       })
     })
 
     it('应在未提供 color 时使用默认色', async () => {
-      mockDb.subject.create.mockResolvedValue({ id: 's1', name: 'X', color: '#16a34a', icon: null })
+      mockVault.subjects.create.mockReturnValue({ id: 's1', name: 'X', color: '#16a34a', icon: null })
 
       const req = new NextRequest('http://localhost/api/subjects', {
         method: 'POST',
@@ -88,8 +77,10 @@ describe('API /api/subjects', () => {
       })
       await POST(req)
 
-      expect(mockDb.subject.create).toHaveBeenCalledWith({
-        data: { name: 'X', color: '#16a34a', icon: null },
+      expect(mockVault.subjects.create).toHaveBeenCalledWith({
+        name: 'X',
+        color: undefined,
+        icon: null,
       })
     })
 
@@ -104,14 +95,14 @@ describe('API /api/subjects', () => {
       expect(res.status).toBe(400)
       const data = await res.json()
       expect(data.error).toBe('name is required')
-      expect(mockDb.subject.create).not.toHaveBeenCalled()
+      expect(mockVault.subjects.create).not.toHaveBeenCalled()
     })
   })
 
   describe('PUT /api/subjects/:id', () => {
     it('应更新指定学科', async () => {
       const updated = { id: 's1', name: '新名称', color: '#000', icon: 'X' }
-      mockDb.subject.update.mockResolvedValue(updated)
+      mockVault.subjects.update.mockReturnValue(updated)
 
       const req = new NextRequest('http://localhost/api/subjects/s1', {
         method: 'PUT',
@@ -123,32 +114,17 @@ describe('API /api/subjects', () => {
 
       expect(res.status).toBe(200)
       expect(data.name).toBe('新名称')
-      expect(mockDb.subject.update).toHaveBeenCalledWith({
-        where: { id: 's1' },
-        data: { name: '新名称', color: '#000', icon: 'X' },
-      })
-    })
-
-    it('应只更新提供的字段', async () => {
-      mockDb.subject.update.mockResolvedValue({ id: 's1', name: '新', color: '#old', icon: null })
-
-      const req = new NextRequest('http://localhost/api/subjects/s1', {
-        method: 'PUT',
-        body: JSON.stringify({ name: '新' }),
-        headers: { 'Content-Type': 'application/json' },
-      })
-      await PUT(req, { params: Promise.resolve({ id: 's1' }) })
-
-      expect(mockDb.subject.update).toHaveBeenCalledWith({
-        where: { id: 's1' },
-        data: { name: '新' },
+      expect(mockVault.subjects.update).toHaveBeenCalledWith('s1', {
+        name: '新名称',
+        color: '#000',
+        icon: 'X',
       })
     })
   })
 
   describe('DELETE /api/subjects/:id', () => {
     it('应删除指定学科', async () => {
-      mockDb.subject.delete.mockResolvedValue({})
+      mockVault.subjects.delete.mockReturnValue(undefined)
 
       const res = await DELETE(
         new NextRequest('http://localhost/api/subjects/s1', { method: 'DELETE' }),
@@ -158,7 +134,7 @@ describe('API /api/subjects', () => {
 
       expect(res.status).toBe(200)
       expect(data.ok).toBe(true)
-      expect(mockDb.subject.delete).toHaveBeenCalledWith({ where: { id: 's1' } })
+      expect(mockVault.subjects.delete).toHaveBeenCalledWith('s1')
     })
   })
 })

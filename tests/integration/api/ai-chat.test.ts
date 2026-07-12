@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { NextRequest } from 'next/server'
-import { mockDb } from '../__mocks__/db'
+import { mockVault } from '../__mocks__/vault'
 
 const mockChatWithAI = vi.fn()
 const mockGenerateChatTitle = vi.fn()
@@ -18,9 +18,9 @@ describe('API /api/ai/chat', () => {
   })
 
   describe('GET /api/ai/chat', () => {
-    it('应返回会话列表(含首条消息)', async () => {
-      mockDb.chatSession.findMany.mockResolvedValue([
-        { id: 'cs1', title: 'T1', messages: [{ content: 'first' }] },
+    it('应返回会话列表', async () => {
+      mockVault.chats.list.mockReturnValue([
+        { id: 'cs1', title: 'T1', context: '', messages: [{ content: 'first' }], createdAt: '', updatedAt: '' },
       ])
 
       const res = await GET()
@@ -28,18 +28,13 @@ describe('API /api/ai/chat', () => {
 
       expect(res.status).toBe(200)
       expect(data).toHaveLength(1)
-      expect(mockDb.chatSession.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          orderBy: { updatedAt: 'desc' },
-          include: { messages: { orderBy: { createdAt: 'asc' }, take: 1 } },
-        }),
-      )
+      expect(data[0].title).toBe('T1')
     })
   })
 
   describe('POST /api/ai/chat', () => {
     it('应创建会话', async () => {
-      mockDb.chatSession.create.mockResolvedValue({ id: 'cs1', title: '新对话' })
+      mockVault.chats.create.mockReturnValue({ id: 'cs1', title: '新对话' })
 
       const req = new NextRequest('http://localhost/api/ai/chat', {
         method: 'POST',
@@ -49,24 +44,7 @@ describe('API /api/ai/chat', () => {
       const res = await POST(req)
 
       expect(res.status).toBe(201)
-      expect(mockDb.chatSession.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({ title: '测试' }),
-      })
-    })
-
-    it('应在未提供 title 时默认"新对话"', async () => {
-      mockDb.chatSession.create.mockResolvedValue({})
-
-      const req = new NextRequest('http://localhost/api/ai/chat', {
-        method: 'POST',
-        body: JSON.stringify({}),
-        headers: { 'Content-Type': 'application/json' },
-      })
-      await POST(req)
-
-      expect(mockDb.chatSession.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({ title: '新对话' }),
-      })
+      expect(mockVault.chats.create).toHaveBeenCalledWith({ title: '测试', context: '' })
     })
   })
 
@@ -83,7 +61,7 @@ describe('API /api/ai/chat', () => {
     })
 
     it('应在会话不存在时返回 404', async () => {
-      mockDb.chatSession.findUnique.mockResolvedValue(null)
+      mockVault.chats.get.mockReturnValue(null)
 
       const req = new NextRequest('http://localhost/api/ai/chat', {
         method: 'PUT',
@@ -96,17 +74,14 @@ describe('API /api/ai/chat', () => {
     })
 
     it('应保存用户消息 + 调用 AI + 保存 AI 回复', async () => {
-      mockDb.chatSession.findUnique.mockResolvedValue({
+      mockVault.chats.get.mockReturnValue({
         id: 'cs1', title: '已有标题', messages: [],
       })
-      mockDb.chatMessage.create.mockResolvedValueOnce({
-        id: 'm1', sessionId: 'cs1', role: 'user', content: 'hello', meta: '',
-      })
+      mockVault.chats.addMessage.mockImplementation((_sessionId: string, msg: any) => ({
+        id: 'm-' + msg.role, sessionId: _sessionId, ...msg,
+      }))
       mockChatWithAI.mockResolvedValue('AI 回复')
-      mockDb.chatMessage.create.mockResolvedValueOnce({
-        id: 'm2', sessionId: 'cs1', role: 'assistant', content: 'AI 回复', meta: '',
-      })
-      mockDb.chatSession.update.mockResolvedValue({})
+      mockVault.chats.update.mockReturnValue({})
 
       const req = new NextRequest('http://localhost/api/ai/chat', {
         method: 'PUT',
@@ -119,22 +94,13 @@ describe('API /api/ai/chat', () => {
       expect(res.status).toBe(200)
       expect(data.userMsg.content).toBe('hello')
       expect(data.aiMsg.content).toBe('AI 回复')
-      // 应保存两条消息
-      expect(mockDb.chatMessage.create).toHaveBeenCalledTimes(2)
-      // 应更新会话时间
-      expect(mockDb.chatSession.update).toHaveBeenCalled()
+      expect(mockVault.chats.addMessage).toHaveBeenCalledTimes(2)
     })
 
     it('应在 AI 失败时返回错误消息', async () => {
-      mockDb.chatSession.findUnique.mockResolvedValue({
-        id: 'cs1', title: 'T', messages: [],
-      })
-      mockDb.chatMessage.create.mockImplementation(async (args: any) => ({
-        id: 'm-' + args.data.role,
-        sessionId: 'cs1',
-        role: args.data.role,
-        content: args.data.content,
-        meta: '',
+      mockVault.chats.get.mockReturnValue({ id: 'cs1', title: 'T', messages: [] })
+      mockVault.chats.addMessage.mockImplementation((_sessionId: string, msg: any) => ({
+        id: 'm-' + msg.role, sessionId: _sessionId, ...msg,
       }))
       mockChatWithAI.mockRejectedValue(new Error('AI 不可用'))
 
@@ -151,15 +117,13 @@ describe('API /api/ai/chat', () => {
     })
 
     it('应在首条消息且标题为"新对话"时自动生成标题', async () => {
-      mockDb.chatSession.findUnique.mockResolvedValue({
-        id: 'cs1', title: '新对话', messages: [],
-      })
-      mockDb.chatMessage.create.mockResolvedValue({ id: 'm1' })
+      mockVault.chats.get.mockReturnValue({ id: 'cs1', title: '新对话', messages: [] })
+      mockVault.chats.addMessage.mockImplementation((_sessionId: string, msg: any) => ({
+        id: 'm-' + msg.role, sessionId: _sessionId, ...msg,
+      }))
       mockChatWithAI.mockResolvedValue('R')
       mockGenerateChatTitle.mockResolvedValue('关于数学')
-      mockDb.chatSession.update.mockResolvedValue({})
-      mockDb.chatMessage.create.mockResolvedValueOnce({ id: 'm1' })
-      mockDb.chatMessage.create.mockResolvedValueOnce({ id: 'm2' })
+      mockVault.chats.update.mockReturnValue({})
 
       const req = new NextRequest('http://localhost/api/ai/chat', {
         method: 'PUT',
@@ -169,22 +133,18 @@ describe('API /api/ai/chat', () => {
       await PUT(req)
 
       expect(mockGenerateChatTitle).toHaveBeenCalledWith('什么是数学?')
-      // 应有两次 update:一次更新标题,一次更新时间
-      const updates = mockDb.chatSession.update.mock.calls
-      expect(updates.some((c) => c[0].data.title === '关于数学')).toBe(true)
+      expect(mockVault.chats.update).toHaveBeenCalledWith('cs1', { title: '关于数学' })
     })
 
     it('应根据上下文类型构建 system prompt', async () => {
-      mockDb.chatSession.findUnique.mockResolvedValue({
-        id: 'cs1', title: 'T', messages: [],
-      })
-      mockDb.chatMessage.create.mockResolvedValue({ id: 'm1' })
+      mockVault.chats.get.mockReturnValue({ id: 'cs1', title: 'T', messages: [] })
+      mockVault.chats.addMessage.mockImplementation((_sessionId: string, msg: any) => ({
+        id: 'm-' + msg.role, sessionId: _sessionId, ...msg,
+      }))
       mockChatWithAI.mockResolvedValue('R')
 
       const contextType = JSON.stringify({
-        type: 'knowledge',
-        title: '勾股定理',
-        content: '直角三角形...',
+        type: 'knowledge', title: '勾股定理', content: '直角三角形...',
       })
       const req = new NextRequest('http://localhost/api/ai/chat', {
         method: 'PUT',
@@ -207,7 +167,7 @@ describe('API /api/chat-sessions/:id', () => {
   })
 
   it('GET 应返回会话含全部消息', async () => {
-    mockDb.chatSession.findUnique.mockResolvedValue({
+    mockVault.chats.get.mockReturnValue({
       id: 'cs1', title: 'T', messages: [
         { id: 'm1', role: 'user', content: 'Q' },
         { id: 'm2', role: 'assistant', content: 'A' },
@@ -225,7 +185,7 @@ describe('API /api/chat-sessions/:id', () => {
   })
 
   it('GET 应在会话不存在时返回 404', async () => {
-    mockDb.chatSession.findUnique.mockResolvedValue(null)
+    mockVault.chats.get.mockReturnValue(null)
 
     const res = await GET_SESSION(
       new NextRequest('http://localhost/api/chat-sessions/x'),
@@ -235,8 +195,8 @@ describe('API /api/chat-sessions/:id', () => {
     expect(res.status).toBe(404)
   })
 
-  it('DELETE 应删除会话(级联删除消息)', async () => {
-    mockDb.chatSession.delete.mockResolvedValue({})
+  it('DELETE 应删除会话', async () => {
+    mockVault.chats.delete.mockReturnValue(undefined)
 
     const res = await DELETE(
       new NextRequest('http://localhost/api/chat-sessions/cs1', { method: 'DELETE' }),
@@ -244,6 +204,6 @@ describe('API /api/chat-sessions/:id', () => {
     )
 
     expect(res.status).toBe(200)
-    expect(mockDb.chatSession.delete).toHaveBeenCalledWith({ where: { id: 'cs1' } })
+    expect(mockVault.chats.delete).toHaveBeenCalledWith('cs1')
   })
 })

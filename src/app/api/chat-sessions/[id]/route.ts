@@ -1,19 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { chats } from '@/lib/vault'
 
-// 获取单个会话的所有消息
-export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const session = await db.chatSession.findUnique({
-    where: { id },
-    include: { messages: { orderBy: { createdAt: 'asc' } } },
-  })
+  const session = chats.get(id)
   if (!session) return NextResponse.json({ error: 'not found' }, { status: 404 })
   return NextResponse.json(session)
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  await db.chatSession.delete({ where: { id } })
+  chats.delete(id)
   return NextResponse.json({ ok: true })
 }

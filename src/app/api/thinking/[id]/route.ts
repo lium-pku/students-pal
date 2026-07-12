@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { thinking } from '@/lib/vault'
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const note = await db.thinkingNote.findUnique({
-    where: { id },
-    include: { subject: true },
-  })
+  const note = thinking.get(id)
   if (!note) return NextResponse.json({ error: 'not found' }, { status: 404 })
   return NextResponse.json(note)
 }
@@ -14,24 +11,25 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const body = await req.json()
-  const note = await db.thinkingNote.update({
-    where: { id },
-    data: {
-      ...(body.title !== undefined && { title: body.title }),
-      ...(body.content !== undefined && { content: body.content }),
-      ...(body.question !== undefined && { question: body.question }),
-      ...(body.subjectId !== undefined && { subjectId: body.subjectId || null }),
-      ...(body.aiReflection !== undefined && { aiReflection: body.aiReflection }),
-      ...(body.aiMode !== undefined && { aiMode: body.aiMode }),
-      ...(body.status !== undefined && { status: body.status }),
-      ...(body.relatedKnowledgeIds !== undefined && { relatedKnowledgeIds: body.relatedKnowledgeIds }),
-    },
-  })
-  return NextResponse.json(note)
+  try {
+    const updates: any = {}
+    if (body.title !== undefined) updates.title = body.title
+    if (body.content !== undefined) updates.content = body.content
+    if (body.question !== undefined) updates.question = body.question
+    if (body.subjectId !== undefined) updates.subjectId = body.subjectId || null
+    if (body.aiReflection !== undefined) updates.aiReflection = body.aiReflection
+    if (body.aiMode !== undefined) updates.aiMode = body.aiMode
+    if (body.status !== undefined) updates.status = body.status
+    if (body.relatedKnowledgeIds !== undefined) updates.relatedKnowledgeIds = body.relatedKnowledgeIds
+    const note = thinking.update(id, updates)
+    return NextResponse.json(note)
+  } catch (e: any) {
+    return NextResponse.json({ error: e.message }, { status: 404 })
+  }
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  await db.thinkingNote.delete({ where: { id } })
+  thinking.delete(id)
   return NextResponse.json({ ok: true })
 }

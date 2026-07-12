@@ -1,26 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { chats } from '@/lib/vault'
 import { chatWithAI, generateChatTitle, ChatTurn } from '@/lib/ai'
 
 // 获取会话列表
 export async function GET() {
-  const sessions = await db.chatSession.findMany({
-    orderBy: { updatedAt: 'desc' },
-    include: {
-      messages: { orderBy: { createdAt: 'asc' }, take: 1 },
-    },
-  })
+  const sessions = chats.list().map((s) => ({
+    id: s.id,
+    title: s.title,
+    context: s.context,
+    createdAt: s.createdAt,
+    updatedAt: s.updatedAt,
+    messages: s.messages.slice(0, 1),
+  }))
   return NextResponse.json(sessions)
 }
 
 // 创建会话
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}))
-  const session = await db.chatSession.create({
-    data: {
-      title: body.title || '新对话',
-      context: body.context ? JSON.stringify(body.context) : '',
-    },
+  const session = chats.create({
+    title: body.title || '新对话',
+    context: body.context ? JSON.stringify(body.context) : '',
   })
   return NextResponse.json(session, { status: 201 })
 }
@@ -33,15 +33,15 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: 'sessionId and content are required' }, { status: 400 })
   }
 
-  const session = await db.chatSession.findUnique({
-    where: { id: sessionId },
-    include: { messages: { orderBy: { createdAt: 'asc' } } },
-  })
+  const session = chats.get(sessionId)
   if (!session) return NextResponse.json({ error: 'session not found' }, { status: 404 })
 
   // 保存用户消息
-  const userMsg = await db.chatMessage.create({
-    data: { sessionId, role: 'user', content },
+  const userMsg = chats.addMessage(sessionId, {
+    role: 'user',
+    content,
+    meta: '',
+    createdAt: new Date().toISOString(),
   })
 
   // 构建上下文
@@ -49,7 +49,7 @@ export async function PUT(req: NextRequest) {
   const history: ChatTurn[] = [{ role: 'system', content: systemPrompt }]
   for (const m of session.messages) {
     if (m.role === 'user' || m.role === 'assistant') {
-      history.push({ role: m.role, content: m.content })
+      history.push({ role: m.role as any, content: m.content })
     }
   }
   history.push({ role: 'user', content })
@@ -63,17 +63,18 @@ export async function PUT(req: NextRequest) {
     aiReply = `抱歉，AI 暂时不可用：${err.message || '未知错误'}`
   }
 
-  const aiMsg = await db.chatMessage.create({
-    data: { sessionId, role: 'assistant', content: aiReply, meta },
+  const aiMsg = chats.addMessage(sessionId, {
+    role: 'assistant',
+    content: aiReply,
+    meta,
+    createdAt: new Date().toISOString(),
   })
 
-  // 如果是第一条用户消息且标题还是默认值，自动生成标题
+  // 如果是第一条用户消息且标题还是默认值,自动生成标题
   if (session.title === '新对话' && session.messages.length === 0) {
     const newTitle = await generateChatTitle(content)
-    await db.chatSession.update({ where: { id: sessionId }, data: { title: newTitle } })
+    chats.update(sessionId, { title: newTitle })
   }
-
-  await db.chatSession.update({ where: { id: sessionId }, data: { updatedAt: new Date() } })
 
   return NextResponse.json({ userMsg, aiMsg })
 }
