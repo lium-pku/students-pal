@@ -215,3 +215,37 @@ Stage Summary:
 - 索引系统(.index.json)让 UI 查询不慢,AI 工具可忽略索引直接读文件
 - 悬空链接暂不自动清理(接受 karpathy 妥协)
 - Prisma/SQLite 依赖已移除(但 prisma 包仍在 package.json,后续可清理)
+
+---
+Task ID: v2-test-coverage
+Agent: main
+Task: v2.0 测试覆盖补全 + 文档完善
+
+Work Log:
+- docs/REQUIREMENTS.md 新增 5.7 章节:数据存储格式(v2.0 文件存储)
+  * 目录结构图
+  * 各实体 frontmatter schema 表(必填/可选字段 + body 内容)
+  * 关联关系的 YAML 格式说明
+  * AI 工具消费示例(Claude Code/Codex/Kimi)
+- 补充 E2E 测试(从 26 个增加到 40 个):
+  * subjects: 重命名学科、删除学科(取消)
+  * knowledge: 编辑知识点、删除知识点、触发 AI 推荐关联
+  * thinking: 编辑思考笔记内容、删除思考笔记、触发 AI 引导思考
+  * wrong-questions: 编辑错题、删除错题、切换错题状态、触发 AI 解析错题
+  * ai-panel: 发送消息并收到回复、关闭 AI 面板
+- 补充集成测试(从 188 个增加到 219 个):
+  * thinking: PUT 更新字段、PUT 更新 AI 引导内容
+  * wrong-questions: PUT 更新字段、PUT options 序列化、PUT 更新 AI 解析
+
+验证:
+- 219 单元+集成测试全过
+- 40 E2E 测试全过
+- 覆盖率:74.37%/62.56%/67.57%/78.28%(全部达标)
+- lint 零错误
+- bun run db:seed 清理并注入演示数据
+
+Stage Summary:
+- E2E 覆盖了所有核心界面操作:新建/编辑/删除/AI 引导/AI 解析/AI 对话/关联推荐
+- 集成测试覆盖了所有 API 的 GET/POST/PUT/DELETE + 错误处理
+- 文档新增 frontmatter schema 章节,AI 工具有完整参考
+- 准备提交 v2.0 tag

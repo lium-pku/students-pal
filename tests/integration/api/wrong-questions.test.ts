@@ -119,6 +119,56 @@ describe('API /api/wrong-questions', () => {
     })
   })
 
+  describe('PUT /api/wrong-questions/:id', () => {
+    it('应更新指定字段', async () => {
+      mockVault.wrongQuestions.update.mockReturnValue({ id: 'w1' })
+
+      const req = new NextRequest('http://localhost/api/wrong-questions/w1', {
+        method: 'PUT',
+        body: JSON.stringify({ status: 'mastered', analysis: '我懂了' }),
+        headers: { 'Content-Type': 'application/json' },
+      })
+      const res = await PUT(req, { params: Promise.resolve({ id: 'w1' }) })
+
+      expect(res.status).toBe(200)
+      expect(mockVault.wrongQuestions.update).toHaveBeenCalledWith('w1', {
+        status: 'mastered',
+        analysis: '我懂了',
+      })
+    })
+
+    it('应将 options 数组序列化为字符串', async () => {
+      mockVault.wrongQuestions.update.mockReturnValue({})
+
+      const req = new NextRequest('http://localhost/api/wrong-questions/w1', {
+        method: 'PUT',
+        body: JSON.stringify({ options: ['X', 'Y'] }),
+        headers: { 'Content-Type': 'application/json' },
+      })
+      await PUT(req, { params: Promise.resolve({ id: 'w1' }) })
+
+      expect(mockVault.wrongQuestions.update).toHaveBeenCalledWith('w1', {
+        options: JSON.stringify(['X', 'Y']),
+      })
+    })
+
+    it('应支持更新 AI 解析', async () => {
+      mockVault.wrongQuestions.update.mockReturnValue({})
+
+      const req = new NextRequest('http://localhost/api/wrong-questions/w1', {
+        method: 'PUT',
+        body: JSON.stringify({ aiExplanation: '## 解析\n...', status: 'reviewed' }),
+        headers: { 'Content-Type': 'application/json' },
+      })
+      await PUT(req, { params: Promise.resolve({ id: 'w1' }) })
+
+      expect(mockVault.wrongQuestions.update).toHaveBeenCalledWith('w1', {
+        aiExplanation: '## 解析\n...',
+        status: 'reviewed',
+      })
+    })
+  })
+
   describe('POST /api/wrong-questions/:id/explain (AI 解析)', () => {
     it('应在错题不存在时返回 404', async () => {
       mockVault.wrongQuestions.get.mockReturnValue(null)

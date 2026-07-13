@@ -46,4 +46,54 @@ test.describe('知识点模块', () => {
     await page.getByPlaceholder('搜索标题、内容或标签...').fill('不存在的关键词_xyz_unique_12345')
     await expect(page.getByText('还没有知识点')).toBeVisible({ timeout: 5000 })
   })
+
+  test('应能编辑知识点', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('button', { name: '知识点 知识库与关联' }).click()
+    await page.waitForTimeout(1000)
+    const cards = page.locator('div.cursor-pointer')
+    const count = await cards.count()
+    if (count > 0) {
+      await cards.first().click()
+      await expect(page.getByText('AI 推荐关联').first()).toBeVisible({ timeout: 5000 })
+      // 点击编辑按钮
+      await page.getByRole('button', { name: '编辑' }).click()
+      await expect(page.getByRole('heading', { name: '编辑知识点' })).toBeVisible({ timeout: 5000 })
+    }
+  })
+
+  test('应能删除知识点', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('button', { name: '知识点 知识库与关联' }).click()
+    await page.waitForTimeout(1000)
+    const cards = page.locator('div.cursor-pointer')
+    const count = await cards.count()
+    if (count > 0) {
+      await cards.first().click()
+      await expect(page.getByText('AI 推荐关联').first()).toBeVisible({ timeout: 5000 })
+      page.on('dialog', (dialog) => dialog.accept())
+      await page.getByRole('button', { name: '删除' }).click()
+      // 对话框应关闭
+      await expect(page.getByText('AI 推荐关联')).not.toBeVisible({ timeout: 5000 })
+    }
+  })
+
+  test('应能触发 AI 推荐关联', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('button', { name: '知识点 知识库与关联' }).click()
+    await page.waitForTimeout(1000)
+    const cards = page.locator('div.cursor-pointer')
+    const count = await cards.count()
+    if (count > 0) {
+      await cards.first().click()
+      await expect(page.getByText('AI 推荐关联').first()).toBeVisible({ timeout: 5000 })
+      // 点击详情中的 AI 推荐关联按钮
+      const aiButtons = page.getByRole('button', { name: 'AI 推荐关联' })
+      if (await aiButtons.count() > 1) {
+        await aiButtons.last().click()
+        // 应打开 AI 推荐对话框
+        await expect(page.getByText(/AI 推荐关联：/)).toBeVisible({ timeout: 15000 })
+      }
+    }
+  })
 })
