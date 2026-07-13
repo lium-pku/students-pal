@@ -117,6 +117,42 @@ describe('API /api/thinking', () => {
     })
   })
 
+  describe('PUT /api/thinking/:id', () => {
+    it('应更新指定字段', async () => {
+      mockVault.thinking.update.mockReturnValue({ id: 't1', title: '新标题' })
+
+      const req = new NextRequest('http://localhost/api/thinking/t1', {
+        method: 'PUT',
+        body: JSON.stringify({ title: '新标题', content: '新内容', status: 'reflected' }),
+        headers: { 'Content-Type': 'application/json' },
+      })
+      const res = await PUT(req, { params: Promise.resolve({ id: 't1' }) })
+
+      expect(res.status).toBe(200)
+      expect(mockVault.thinking.update).toHaveBeenCalledWith('t1', {
+        title: '新标题',
+        content: '新内容',
+        status: 'reflected',
+      })
+    })
+
+    it('应支持更新 AI 引导内容', async () => {
+      mockVault.thinking.update.mockReturnValue({})
+
+      const req = new NextRequest('http://localhost/api/thinking/t1', {
+        method: 'PUT',
+        body: JSON.stringify({ aiReflection: 'AI 引导', aiMode: 'socratic' }),
+        headers: { 'Content-Type': 'application/json' },
+      })
+      await PUT(req, { params: Promise.resolve({ id: 't1' }) })
+
+      expect(mockVault.thinking.update).toHaveBeenCalledWith('t1', {
+        aiReflection: 'AI 引导',
+        aiMode: 'socratic',
+      })
+    })
+  })
+
   describe('POST /api/thinking/:id/reflect (AI 引导)', () => {
     it('应在笔记不存在时返回 404', async () => {
       mockVault.thinking.get.mockReturnValue(null)

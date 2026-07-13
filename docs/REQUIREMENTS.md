@@ -296,6 +296,52 @@
 ### 5.6 国际化
 - 当前仅中文
 
+### 5.7 数据存储格式(v2.0 文件存储)
+
+**目录结构**(两层,符合 karpathy llm-wiki):
+```
+vault/
+├── subjects/      # 学科,每个学科一个 .md 文件
+├── knowledge/     # 知识点,每个知识点一个 .md 文件
+├── thinking/      # 思考笔记,每条一个 .md 文件
+├── wrong/         # 错题,每道一个 .md 文件
+├── chats/         # AI 对话会话,每个会话一个 .md 文件
+└── .index.json    # App 维护的索引(AI 工具可忽略)
+```
+
+**文件格式**: YAML frontmatter(元数据) + Markdown body(内容)
+
+**各实体 frontmatter schema**:
+
+| 实体 | 必填字段 | 可选字段 | body 内容 |
+|---|---|---|---|
+| Subject | `id`, `type: subject`, `name`, `created`, `updated` | `color`, `icon` | `# {name}` |
+| KnowledgePoint | `id`, `type: knowledge-point`, `title`, `created`, `updated` | `subject`(id), `tags`[], `mastery`(0-100), `related`[] | 知识点内容(Markdown) |
+| ThinkingNote | `id`, `type: thinking-note`, `title`, `created`, `updated` | `subject`(id), `status`(draft/reflecting/reflected), `ai-mode`, `ai-reflection`, `related-knowledge`[], `question` | 学生的思考(Markdown) |
+| WrongQuestion | `id`, `type: wrong-question`, `created`, `updated` | `subject`(id), `question-type`, `options`, `my-answer`, `correct-answer`, `status`(unresolved/reviewed/mastered), `related-knowledge`(id), `ai-explanation` | `## 题目\n{question}\n\n## 我的错因分析\n{analysis}` |
+| ChatSession | `id`, `type: chat-session`, `title`, `created`, `updated` | `context`(JSON string), `messages`[] | `# {title}` |
+
+**关联关系**(knowledge 的 `related` 字段):
+```yaml
+related:
+  - id: {目标知识点 id}
+    type: prerequisite|extension|contrast|example|related
+    description: 一句话说明
+    ai-generated: true|false
+```
+
+**AI 工具消费示例**:
+```bash
+# Claude Code 分析思考笔记
+claude "读 vault/thinking/*.md,分析学生的思维盲点"
+
+# Codex 构建知识关联图
+codex "基于 vault/knowledge/*.md 的 frontmatter related 字段,输出知识网络图"
+
+# Kimi 出复习题
+kimi "读 vault/wrong/ 下的错题,出 5 道同知识点的变式题"
+```
+
 ---
 
 ## 6. 技术栈

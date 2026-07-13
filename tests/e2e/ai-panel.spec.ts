@@ -48,4 +48,26 @@ test.describe('AI 学伴面板', () => {
     await page.getByRole('button', { name: /新对话/ }).click()
     await expect(page.getByText('这道题的关键思路是什么？')).toBeVisible({ timeout: 3000 })
   })
+
+  test('应能发送消息并收到回复', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('button', { name: /AI 学伴/, exact: false }).first().click()
+    // 输入消息
+    const input = page.getByPlaceholder(/向 AI 学伴提问/)
+    await input.fill('你好,请简单介绍一下勾股定理')
+    // 按 Enter 发送
+    await input.press('Enter')
+    // 应显示用户消息
+    await expect(page.getByText('你好,请简单介绍一下勾股定理')).toBeVisible({ timeout: 5000 })
+    // 应显示 AI 回复(等待较长时间,AI 调用可能慢)
+    await expect(page.getByText(/AI 思考中|AI 回复|定理/).first()).toBeVisible({ timeout: 90000 })
+  })
+
+  test('应能关闭 AI 面板', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('button', { name: /AI 学伴/, exact: false }).first().click()
+    await expect(page.getByText('通用学习助手')).toBeVisible({ timeout: 5000 })
+    await page.getByRole('button', { name: /关闭面板/ }).click()
+    await expect(page.getByText('通用学习助手')).not.toBeVisible({ timeout: 3000 })
+  })
 })
