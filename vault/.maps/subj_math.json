@@ -1,0 +1,50 @@
+{
+  "subjectId": "subj_math",
+  "subjectName": "数学",
+  "nodes": [
+    {
+      "id": "kp_pythagorean",
+      "title": "勾股定理",
+      "mastery": 75,
+      "x": 387.8396051679607,
+      "y": 301.90728384035185,
+      "radius": 20.8,
+      "relationCount": 2
+    },
+    {
+      "id": "kp_number_line",
+      "title": "数轴",
+      "mastery": 90,
+      "x": 370.95081560242846,
+      "y": 249.5189333408305,
+      "radius": 18.4,
+      "relationCount": 1
+    },
+    {
+      "id": "kp_multiplication",
+      "title": "乘法交换律",
+      "mastery": 95,
+      "x": 391.87757425811014,
+      "y": 356.80232265695656,
+      "radius": 18.4,
+      "relationCount": 1
+    }
+  ],
+  "edges": [
+    {
+      "from": "kp_pythagorean",
+      "to": "kp_multiplication",
+      "type": "related",
+      "description": "勾股定理中涉及平方运算",
+      "aiGenerated": true
+    },
+    {
+      "from": "kp_number_line",
+      "to": "kp_pythagorean",
+      "type": "related",
+      "description": "数轴可用于表示勾股定理中的边长",
+      "aiGenerated": true
+    }
+  ],
+  "generatedAt": "2026-07-17T12:19:05.059Z"
+}

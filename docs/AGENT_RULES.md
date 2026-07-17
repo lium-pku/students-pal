@@ -33,6 +33,13 @@
 ⑩ 在 worklog.md 追加最终 stage summary
 ```
 
+> **⚠️ Git Hooks 自动强制执行**(v2.1 新增):
+> 以下检查由 git hooks 自动执行,无需手动记忆:
+> - **pre-commit**(`.git/hooks/pre-commit`):提交时自动跑 lint + 单元测试 + 覆盖率检查。任一失败则提交被阻止。
+> - **pre-push**(`.git/hooks/pre-push`):推送时自动跑 E2E 测试 + db:seed 清理 + 文档更新检查 + worklog 检查。任一失败则推送被阻止。
+> - 安装命令:`bun run hooks:install`
+> - 手动触发:`bun run pre-commit` / `bun run pre-push`
+
 ---
 
 ## 2. 四大硬性要求(违反即失败)
