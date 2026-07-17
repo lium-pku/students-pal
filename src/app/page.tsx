@@ -5,6 +5,7 @@ import { Subject, api } from '@/lib/types'
 import { Dashboard } from '@/components/modules/Dashboard'
 import { SubjectsModule } from '@/components/modules/Subjects'
 import { KnowledgeModule } from '@/components/modules/Knowledge'
+import { KnowledgeMapModule } from '@/components/modules/KnowledgeMap'
 import { ThinkingModule } from '@/components/modules/Thinking'
 import { WrongQuestionsModule } from '@/components/modules/WrongQuestions'
 import { AIPanel, AIContext } from '@/components/ai-panel/AIPanel'
@@ -19,14 +20,16 @@ import {
   Menu,
   X,
   PanelRightOpen,
+  Network,
 } from 'lucide-react'
 
-type Tab = 'dashboard' | 'subjects' | 'knowledge' | 'thinking' | 'wrong'
+type Tab = 'dashboard' | 'subjects' | 'knowledge' | 'map' | 'thinking' | 'wrong'
 
 const NAV: { id: Tab; label: string; icon: any; desc: string }[] = [
   { id: 'dashboard', label: '概览', icon: LayoutDashboard, desc: '学习仪表盘' },
   { id: 'subjects', label: '学科', icon: Layers, desc: '管理学科分类' },
   { id: 'knowledge', label: '知识点', icon: BookOpen, desc: '知识库与关联' },
+  { id: 'map', label: '知识地图', icon: Network, desc: '可视化知识结构' },
   { id: 'thinking', label: '思考笔记', icon: BrainCircuit, desc: '自主思考 + AI 引导' },
   { id: 'wrong', label: '错题本', icon: FileQuestion, desc: '错题与 AI 解析' },
 ]
@@ -71,6 +74,15 @@ export default function Home() {
   function navigate(t: string) {
     setTab(t as Tab)
     setSidebarOpen(false)
+  }
+
+  // 知识地图节点点击 → 切到知识点标签并打开详情
+  function showKnowledgeDetail(knowledgeId: string) {
+    setTab('knowledge')
+    // 通过自定义事件通知 KnowledgeModule 打开详情
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('open-knowledge-detail', { detail: knowledgeId }))
+    }, 100)
   }
 
   return (
@@ -197,6 +209,7 @@ export default function Home() {
             {tab === 'dashboard' && <Dashboard subjects={subjects} onNavigate={navigate} />}
             {tab === 'subjects' && <SubjectsModule subjects={subjects} onChange={loadSubjects} />}
             {tab === 'knowledge' && <KnowledgeModule subjects={subjects} onAskAI={askAI} />}
+            {tab === 'map' && <KnowledgeMapModule subjects={subjects} onNodeClick={showKnowledgeDetail} />}
             {tab === 'thinking' && <ThinkingModule subjects={subjects} onAskAI={askAI} />}
             {tab === 'wrong' && <WrongQuestionsModule subjects={subjects} onAskAI={askAI} />}
           </div>

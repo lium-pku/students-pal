@@ -182,7 +182,55 @@
 
 ---
 
-### 3.6 AI 学伴面板 (AI Panel)
+### 3.6 知识地图 (Knowledge Map) — v2.1 新增
+
+**已实现**:
+- 独立导航标签"知识地图"
+- 学科知识地图:以 SVG 力导向布局展示该学科下所有知识点 + 关联
+- 节点视觉编码:
+  - 颜色按掌握度(红 0-40% / 黄 41-70% / 绿 71-100%)
+  - 形状按类型(圆 = 知识点)
+  - 大小按关联数(关联越多节点越大)
+- 边视觉编码:按关联类型着色(prerequisite 红 / extension 绿 / contrast 黄 / example 紫 / related 蓝)
+- 交互:
+  - 拖拽节点(拖拽后该节点固定)
+  - 滚轮缩放 / 拖拽平移整个画布
+  - 点击节点跳转到知识点详情
+  - 悬浮显示知识点标题 + 掌握度
+- 学科切换:下拉选择不同学科,地图切换
+- 刷新地图:手动触发重新计算布局(用于数据变化后更新)
+- 缓存机制:
+  - 地图布局结果以 JSON 缓存在 `vault/.maps/{subjectId}.json`
+  - 生成时计算力导向布局(100 次迭代)
+  - 用户可手动刷新,也可在数据变化后自动失效
+
+**待迭代**:
+- 允许用户指定生成范围(只看某几个知识点)
+- 允许用户指定链接关系范围(只看 prerequisite,不看 related)
+- 节点类型扩展(思考笔记 / 错题也作为节点)
+- 力导向布局参数可调
+
+**接口**:
+- `GET /api/knowledge-map?subjectId=xxx` — 获取地图(有缓存则返回缓存,无则生成)
+- `POST /api/knowledge-map?subjectId=xxx` — 强制重新生成地图(刷新)
+
+**数据格式**(`vault/.maps/{subjectId}.json`):
+```json
+{
+  "subjectId": "subj_math",
+  "nodes": [
+    { "id": "kp1", "title": "勾股定理", "mastery": 75, "x": 320, "y": 280, "radius": 22 }
+  ],
+  "edges": [
+    { "from": "kp2", "to": "kp1", "type": "prerequisite", "description": "..." }
+  ],
+  "generatedAt": "2026-07-15T..."
+}
+```
+
+---
+
+### 3.7 AI 学伴面板 (AI Panel)
 
 **已实现**:
 - 右侧可收起面板
@@ -390,6 +438,7 @@ kimi "读 vault/wrong/ 下的错题,出 5 道同知识点的变式题"
 | 2026-07-07 | v1.1 | P0 平板适配:侧边栏断点改 lg:(1024px);AI 面板断点改 md:(768px)侧边 380px;触摸目标放大至 36px+;hover-only 按钮平板常显 | agent |
 | 2026-07-10 | v1.2 | P1 体验优化:Dialog 自适应(w-95vw+max-w);AutoTextarea 自动撑高;平板字体 15px;触摸设备禁用 hover/长按选中。P2 PWA:manifest+多尺寸图标+Service Worker+离线兜底页+layout 注入 | agent |
 | 2026-07-10 | v2.0 | **架构重构**:数据层从 SQLite/Prisma 迁移到 Markdown 文件 + YAML frontmatter(karpathy llm-wiki 式)。目的:让数据对 AI 工具(Claude Code/Codex/Kimi)友好,可直接读文件。3 个妥协(关联用 frontmatter 引用/接受悬空链接/AI 内容加 status)+ 1 个增强(.index.json 索引) | agent |
+| 2026-07-15 | v2.1 | **知识地图**:独立导航标签,SVG 力导向布局展示学科知识点 + 关联。节点按掌握度着色(红/黄/绿),边按关联类型着色。支持拖拽/缩放/点击跳转。地图布局缓存到 `vault/.maps/{subjectId}.json` | agent |
 
 ---
 
