@@ -5,9 +5,9 @@ import { Subject, api } from '@/lib/types'
 import { Dashboard } from '@/components/modules/Dashboard'
 import { SubjectsModule } from '@/components/modules/Subjects'
 import { KnowledgeModule } from '@/components/modules/Knowledge'
-import { KnowledgeMapModule } from '@/components/modules/KnowledgeMap'
 import { ThinkingModule } from '@/components/modules/Thinking'
 import { WrongQuestionsModule } from '@/components/modules/WrongQuestions'
+import { KnowledgeMapModule } from '@/components/modules/KnowledgeMap'
 import { AIPanel, AIContext } from '@/components/ai-panel/AIPanel'
 import { Button } from '@/components/ui/button'
 import {
@@ -76,10 +76,8 @@ export default function Home() {
     setSidebarOpen(false)
   }
 
-  // 知识地图节点点击 → 切到知识点标签并打开详情
   function showKnowledgeDetail(knowledgeId: string) {
     setTab('knowledge')
-    // 通过自定义事件通知 KnowledgeModule 打开详情
     setTimeout(() => {
       window.dispatchEvent(new CustomEvent('open-knowledge-detail', { detail: knowledgeId }))
     }, 100)

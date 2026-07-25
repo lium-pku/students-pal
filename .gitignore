@@ -17,10 +17,6 @@ node_modules
 /blob-report
 /playwright/.cache
 
-# vault caches (AI 工具可忽略,App 自动维护)
-/vault/.maps/
-/vault/.index.json
-
 # next.js
 /.next/
 /out/

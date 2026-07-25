@@ -1,7 +1,6 @@
 import { test, expect } from '@playwright/test'
 
 test.describe('知识地图', () => {
-  // 每个测试都重新导航,避免状态污染
   async function goToMap(page: import('@playwright/test').Page) {
     await page.goto('/')
     await page.waitForLoadState('networkidle')
@@ -9,9 +8,7 @@ test.describe('知识地图', () => {
     await expect(page.getByRole('heading', { name: '知识地图', exact: true })).toBeVisible({ timeout: 10000 })
   }
 
-  test('应能从侧边栏进入知识地图', async ({ page }) => {
-    await goToMap(page)
-  })
+  test('应能从侧边栏进入知识地图', async ({ page }) => { await goToMap(page) })
 
   test('应显示学科选择下拉(默认选数学)', async ({ page }) => {
     await goToMap(page)
@@ -42,17 +39,12 @@ test.describe('知识地图', () => {
 
   test('应渲染知识地图 SVG(含 circle 节点)', async ({ page }) => {
     await goToMap(page)
-    // 等待地图加载完成(显示生成时间)
     await expect(page.getByText(/地图生成于/)).toBeVisible({ timeout: 15000 })
     await page.waitForTimeout(1000)
-    // 用 evaluate 找包含 circle 的 SVG
     const result = await page.evaluate(() => {
-      const svgs = document.querySelectorAll('svg')
-      for (const svg of svgs) {
-        const circles = svg.querySelectorAll('circle')
-        if (circles.length > 0) {
-          return { found: true, circles: circles.length }
-        }
+      for (const svg of document.querySelectorAll('svg')) {
+        const c = svg.querySelectorAll('circle').length
+        if (c > 0) return { found: true, circles: c }
       }
       return { found: false, circles: 0 }
     })
@@ -65,10 +57,9 @@ test.describe('知识地图', () => {
     await expect(page.getByText(/地图生成于/)).toBeVisible({ timeout: 15000 })
     await page.waitForTimeout(1000)
     const hasTitle = await page.evaluate(() => {
-      const svgs = document.querySelectorAll('svg')
-      for (const svg of svgs) {
-        const texts = Array.from(svg.querySelectorAll('text')).map((t) => t.textContent || '')
-        if (texts.some((t) => t.includes('勾股定理'))) return true
+      for (const svg of document.querySelectorAll('svg')) {
+        const texts = Array.from(svg.querySelectorAll('text')).map(t => t.textContent || '')
+        if (texts.some(t => t.includes('勾股定理'))) return true
       }
       return false
     })
