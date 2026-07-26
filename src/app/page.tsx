@@ -83,6 +83,23 @@ export default function Home() {
     }, 100)
   }
 
+  // 知识地图节点点击 → 根据类型跳转
+  function showMapNodeDetail(nodeId: string, nodeType: string) {
+    if (nodeType === 'knowledge') {
+      showKnowledgeDetail(nodeId)
+    } else if (nodeType === 'thinking') {
+      setTab('thinking')
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('open-thinking-detail', { detail: nodeId }))
+      }, 100)
+    } else if (nodeType === 'wrong') {
+      setTab('wrong')
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('open-wrong-detail', { detail: nodeId }))
+      }, 100)
+    }
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* 顶部 Header */}
@@ -207,7 +224,7 @@ export default function Home() {
             {tab === 'dashboard' && <Dashboard subjects={subjects} onNavigate={navigate} />}
             {tab === 'subjects' && <SubjectsModule subjects={subjects} onChange={loadSubjects} />}
             {tab === 'knowledge' && <KnowledgeModule subjects={subjects} onAskAI={askAI} />}
-            {tab === 'map' && <KnowledgeMapModule subjects={subjects} onNodeClick={showKnowledgeDetail} />}
+            {tab === 'map' && <KnowledgeMapModule subjects={subjects} onNodeClick={showMapNodeDetail} />}
             {tab === 'thinking' && <ThinkingModule subjects={subjects} onAskAI={askAI} />}
             {tab === 'wrong' && <WrongQuestionsModule subjects={subjects} onAskAI={askAI} />}
           </div>

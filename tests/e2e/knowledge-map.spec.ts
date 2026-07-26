@@ -27,8 +27,8 @@ test.describe('知识地图', () => {
 
   test('应显示图例', async ({ page }) => {
     await goToMap(page)
-    await expect(page.getByText('掌握度:')).toBeVisible({ timeout: 5000 })
-    await expect(page.getByText('关联类型:')).toBeVisible()
+    await expect(page.getByText('知识点掌握度:')).toBeVisible({ timeout: 5000 })
+    await expect(page.getByText('节点类型:')).toBeVisible()
   })
 
   test('点击刷新应重新生成地图', async ({ page }) => {

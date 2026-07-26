@@ -58,6 +58,12 @@ export interface KnowledgePoint {
   updatedAt: string
 }
 
+export interface ThinkingRelation {
+  id: string          // 目标思考笔记 id
+  type: string        // extends | contrasts | refutes | inspired-by
+  description: string
+}
+
 export interface ThinkingNote {
   id: string
   title: string
@@ -68,6 +74,7 @@ export interface ThinkingNote {
   status: string
   subjectId: string | null
   relatedKnowledgeIds: string[]
+  relatedThinking: ThinkingRelation[]  // v2.2 新增:关联的其他思考笔记
   createdAt: string
   updatedAt: string
 }
@@ -680,6 +687,7 @@ export const thinking = {
       status: parsed.data.status || 'draft',
       subjectId: parsed.data.subject || null,
       relatedKnowledgeIds: parsed.data['related-knowledge'] || [],
+      relatedThinking: parsed.data['related-thinking'] || [],
       createdAt: parsed.data.created || now(),
       updatedAt: parsed.data.updated || now(),
     }
@@ -704,6 +712,7 @@ export const thinking = {
       status: 'draft',
       subjectId: data.subjectId || null,
       relatedKnowledgeIds: [],
+      relatedThinking: [],
       createdAt: ts,
       updatedAt: ts,
     }
@@ -718,6 +727,7 @@ export const thinking = {
         'ai-mode': 'socratic',
         'ai-reflection': '',
         'related-knowledge': [],
+        'related-thinking': [],
         question: data.question || '',
         created: ts,
         updated: ts,
@@ -750,6 +760,7 @@ export const thinking = {
         'ai-mode': updated.aiMode,
         'ai-reflection': updated.aiReflection,
         'related-knowledge': updated.relatedKnowledgeIds,
+        'related-thinking': updated.relatedThinking || [],
         question: updated.question,
         created: updated.createdAt,
         updated: updated.updatedAt,

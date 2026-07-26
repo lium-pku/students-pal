@@ -4,29 +4,42 @@
   "nodes": [
     {
       "id": "kp_pythagorean",
+      "type": "knowledge",
       "title": "勾股定理",
       "mastery": 75,
-      "x": 387.8396051679607,
-      "y": 301.90728384035185,
-      "radius": 20.8,
+      "x": 353.1524691498543,
+      "y": 278.0099814412828,
+      "radius": 18.8,
       "relationCount": 2
     },
     {
       "id": "kp_number_line",
+      "type": "knowledge",
       "title": "数轴",
       "mastery": 90,
-      "x": 370.95081560242846,
-      "y": 249.5189333408305,
-      "radius": 18.4,
+      "x": 301.5611668255059,
+      "y": 297.76084505375644,
+      "radius": 16.4,
       "relationCount": 1
     },
     {
       "id": "kp_multiplication",
+      "type": "knowledge",
       "title": "乘法交换律",
       "mastery": 95,
-      "x": 391.87757425811014,
-      "y": 356.80232265695656,
-      "radius": 18.4,
+      "x": 410.7404515346109,
+      "y": 281.4129556173498,
+      "radius": 18.8,
+      "relationCount": 2
+    },
+    {
+      "id": "wq_negative_mult",
+      "type": "wrong",
+      "title": "计算: (-2) × (-3) = ?",
+      "status": "reviewed",
+      "x": 461.4016366307302,
+      "y": 303.35887487073353,
+      "radius": 16,
       "relationCount": 1
     }
   ],
@@ -44,7 +57,14 @@
       "type": "related",
       "description": "数轴可用于表示勾股定理中的边长",
       "aiGenerated": true
+    },
+    {
+      "from": "kp_multiplication",
+      "to": "wq_negative_mult",
+      "type": "has-wrong",
+      "description": "",
+      "aiGenerated": false
     }
   ],
-  "generatedAt": "2026-07-25T15:32:20.498Z"
+  "generatedAt": "2026-07-26T04:26:50.949Z"
 }
