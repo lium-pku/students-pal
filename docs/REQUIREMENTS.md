@@ -119,8 +119,23 @@
     - 一键让 AI 引导
     - AI 输出以 Markdown 渲染
     - 可重新让 AI 引导
+  - **关联其他思考笔记(v2.2 新增)**:可在详情中关联其他思考,4 种关系:
+    - `extends`(延伸):基于另一条思考进一步展开
+    - `contrasts`(对比):与另一条思考形成对比
+    - `refutes`(反驳):反驳另一条思考的观点
+    - `inspired-by`(受启发):受另一条思考启发
+  - **关联知识点**:通过 `related-knowledge` 字段关联知识点(已实现)
 - 新建 / 重命名 / 删除笔记
 - 状态机:draft → reflecting → reflected
+
+**frontmatter 字段(v2.2 扩展)**:
+```yaml
+related-knowledge: [kp1, kp2]        # 关联的知识点 id
+related-thinking:                     # 关联的其他思考笔记(v2.2 新增)
+  - id: thinking_xxx
+    type: extends                     # extends | contrasts | refutes | inspired-by
+    description: 从负负得正延伸到分配律
+```
 
 **接口**:
 - `GET /api/thinking?subjectId=&status=&q=` — 列出笔记
@@ -182,31 +197,34 @@
 
 ---
 
-### 3.6 知识地图 (Knowledge Map) — v2.1 新增
+### 3.6 知识地图 (Knowledge Map) — v2.1 新增,v2.2 扩展
 
 **已实现**:
 - 独立导航标签"知识地图"
-- 学科知识地图:SVG 力导向布局展示该学科下所有知识点 + 关联
-- 节点视觉编码:
-  - 颜色按掌握度(红 0-40% / 黄 41-70% / 绿 71-100%)
-  - 大小按关联数(关联越多节点越大,16-28px)
-- 边视觉编码:按关联类型着色(prerequisite 红 / extension 绿 / contrast 黄 / example 紫 / related 蓝)
-- 交互:
-  - 拖拽节点(拖拽后该节点固定)
-  - 滚轮缩放 / 拖拽平移整个画布
-  - 点击节点跳转到知识点详情
-  - 工具栏:学科切换 / 刷新 / 缩放按钮 / 重置视图
-- 缓存机制:
-  - 地图布局结果以 JSON 缓存在 `vault/.maps/{subjectId}.json`
-  - 力导向布局 100 次迭代(seededRandom 保证可复现)
-  - 跨学科关联自动过滤
-  - 用户可手动刷新
+- 学科知识地图:SVG 力导向布局展示该学科下知识点 + 思考笔记 + 错题 + 所有关联
+- **节点类型(v2.2 扩展)**:
+  - 📚 知识点(圆形)— 颜色按掌握度(红/黄/绿),大小按关联数
+  - 💭 思考笔记(方形)— 只显示有关联的(related-knowledge 或 related-thinking 不为空),颜色按状态(草稿灰/已引导蓝)
+  - ✗ 错题(三角形)— 只显示有关联的(related-knowledge 不为空),颜色按状态(未处理红/已解析黄/已掌握绿)
+- **边类型**:
+  - 知识点 ↔ 知识点:prerequisite(红)/ extension(绿)/ contrast(黄)/ example(紫)/ related(蓝)
+  - 知识点 → 思考笔记:has-thinking(浅蓝虚线)
+  - 知识点 → 错题:has-wrong(浅红虚线)
+  - 思考笔记 → 思考笔记:extends / contrasts / refutes / inspired-by(灰色虚线)
+- **交互**:
+  - 拖拽节点(拖拽后固定)
+  - 滚轮缩放 / 拖拽平移画布
+  - 点击知识点节点 → 跳转知识点详情
+  - 点击思考笔记节点 → 跳转思考笔记详情
+  - 点击错题节点 → 跳转错题详情
+  - 工具栏:学科切换 / 刷新 / 缩放 / 重置视图
+- **缓存**:地图布局缓存到 `vault/.maps/{subjectId}.json`,力导向 100 次迭代(seededRandom 可复现)
 
 **待迭代**:
 - 允许用户指定生成范围(只看某几个知识点)
-- 允许用户指定链接关系范围(只看 prerequisite,不看 related)
-- 节点类型扩展(思考笔记 / 错题也作为节点)
+- 允许用户指定链接关系范围(按类型过滤边)
 - 力导向布局参数可调
+- 悬浮显示节点详情卡片
 
 **接口**:
 - `GET /api/knowledge-map?subjectId=xxx` — 获取地图(有缓存则返回缓存,无则生成)
@@ -216,8 +234,17 @@
 ```json
 {
   "subjectId": "subj_math",
-  "nodes": [{ "id": "kp1", "title": "勾股定理", "mastery": 75, "x": 320, "y": 280, "radius": 22, "relationCount": 2 }],
-  "edges": [{ "from": "kp2", "to": "kp1", "type": "prerequisite", "description": "..." }],
+  "nodes": [
+    { "id": "kp1", "type": "knowledge", "title": "勾股定理", "mastery": 75, "x": 320, "y": 280, "radius": 22, "relationCount": 2 },
+    { "id": "t1", "type": "thinking", "title": "为什么负负得正?", "status": "reflected", "x": 150, "y": 200, "radius": 16 },
+    { "id": "w1", "type": "wrong", "title": "负数乘法", "status": "reviewed", "x": 400, "y": 350, "radius": 16 }
+  ],
+  "edges": [
+    { "from": "kp2", "to": "kp1", "type": "prerequisite", "description": "..." },
+    { "from": "kp1", "to": "t1", "type": "has-thinking", "description": "" },
+    { "from": "kp1", "to": "w1", "type": "has-wrong", "description": "" },
+    { "from": "t1", "to": "t2", "type": "extends", "description": "从负负得正延伸" }
+  ],
   "generatedAt": "2026-07-15T..."
 }
 ```
@@ -433,6 +460,7 @@ kimi "读 vault/wrong/ 下的错题,出 5 道同知识点的变式题"
 | 2026-07-10 | v1.2 | P1 体验优化:Dialog 自适应(w-95vw+max-w);AutoTextarea 自动撑高;平板字体 15px;触摸设备禁用 hover/长按选中。P2 PWA:manifest+多尺寸图标+Service Worker+离线兜底页+layout 注入 | agent |
 | 2026-07-10 | v2.0 | **架构重构**:数据层从 SQLite/Prisma 迁移到 Markdown 文件 + YAML frontmatter(karpathy llm-wiki 式)。目的:让数据对 AI 工具(Claude Code/Codex/Kimi)友好,可直接读文件。3 个妥协(关联用 frontmatter 引用/接受悬空链接/AI 内容加 status)+ 1 个增强(.index.json 索引) | agent |
 | 2026-07-15 | v2.1 | **知识地图**:独立导航标签,SVG 力导向布局展示学科知识点 + 关联。节点按掌握度着色,边按关联类型着色。支持拖拽/缩放/平移/点击跳转。地图布局缓存到 `vault/.maps/{subjectId}.json`。补充 UI 组件测试(AutoTextarea/Knowledge/Thinking/WrongQuestions)。新增 git hooks 强制 lint + 测试 + db:seed | agent |
+| 2026-07-17 | v2.2 | **知识地图扩展**:加入思考笔记(方形)和错题(三角形)节点。新增边类型 has-thinking / has-wrong / extends / contrasts / refutes / inspired-by。只显示有关联的思考/错题。思考笔记新增 related-thinking 字段(4 种关系)。点击不同类型节点跳转对应详情 | agent |
 
 ---
 

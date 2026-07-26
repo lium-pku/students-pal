@@ -1,11 +1,22 @@
 /**
- * knowledge-map.ts — 知识地图生成引擎
- * 力导向布局(Fruchterman-Reingold 简化版,100 次迭代)
- * 缓存到 vault/.maps/{subjectId}.json
+ * knowledge-map.ts — 知识地图生成引擎(v2.2 扩展)
+ *
+ * 节点类型:
+ *   - knowledge(知识点,圆形)
+ *   - thinking(思考笔记,方形)
+ *   - wrong(错题,三角形)
+ *
+ * 边类型:
+ *   - 知识点间:prerequisite / extension / contrast / example / related
+ *   - 知识点→思考:has-thinking
+ *   - 知识点→错题:has-wrong
+ *   - 思考→思考:extends / contrasts / refutes / inspired-by
+ *
+ * 只显示有关联的思考/错题(related-knowledge 或 related-thinking 不为空)
  */
 import fs from 'fs'
 import path from 'path'
-import { knowledge, subjects } from './vault'
+import { knowledge, subjects, thinking, wrongQuestions } from './vault'
 
 const MAPS_DIR = path.join(process.cwd(), 'vault', '.maps')
 const CANVAS_WIDTH = 800
@@ -15,17 +26,38 @@ const REPULSION = 8000
 const ATTRACTION = 0.05
 const CENTER_GRAVITY = 0.01
 const MAX_DISPLACEMENT = 50
-const MIN_RADIUS = 16
-const MAX_RADIUS = 28
+const MIN_RADIUS = 14
+const MAX_RADIUS = 26
+const SECONDARY_RADIUS = 16  // 思考/错题节点固定大小
+
+export type NodeType = 'knowledge' | 'thinking' | 'wrong'
 
 export interface MapNode {
-  id: string; title: string; mastery: number; x: number; y: number; radius: number; relationCount: number
+  id: string
+  type: NodeType
+  title: string
+  mastery?: number      // 知识点专用
+  status?: string       // 思考/错题专用
+  x: number
+  y: number
+  radius: number
+  relationCount: number
 }
+
 export interface MapEdge {
-  from: string; to: string; type: string; description: string; aiGenerated: boolean
+  from: string
+  to: string
+  type: string
+  description: string
+  aiGenerated?: boolean
 }
+
 export interface KnowledgeMap {
-  subjectId: string; subjectName: string; nodes: MapNode[]; edges: MapEdge[]; generatedAt: string
+  subjectId: string
+  subjectName: string
+  nodes: MapNode[]
+  edges: MapEdge[]
+  generatedAt: string
 }
 
 function ensureMapsDir() { if (!fs.existsSync(MAPS_DIR)) fs.mkdirSync(MAPS_DIR, { recursive: true }) }
@@ -76,15 +108,94 @@ function runForceLayout(nodes: MapNode[], edges: MapEdge[]) {
 function buildMap(subjectId: string): KnowledgeMap | null {
   const subj = subjects.get(subjectId)
   if (!subj) return null
+
   const allKp = knowledge.list({ subjectId })
-  if (allKp.length === 0) return { subjectId, subjectName: subj.name, nodes: [], edges: [], generatedAt: new Date().toISOString() }
-  const nodeIds = new Set(allKp.map(k => k.id))
+  if (allKp.length === 0) {
+    return { subjectId, subjectName: subj.name, nodes: [], edges: [], generatedAt: new Date().toISOString() }
+  }
+
+  // 收集所有节点 id(知识点 + 相关思考 + 相关错题)
+  const kpIds = new Set(allKp.map(k => k.id))
   const edges: MapEdge[] = []
-  for (const kp of allKp) for (const r of kp.relationsFrom) if (nodeIds.has(r.toId)) edges.push({ from: r.fromId, to: r.toId, type: r.type, description: r.description, aiGenerated: r.aiGenerated })
+  const nodes: MapNode[] = []
+
+  // 1. 知识点节点 + 知识点间关联
+  for (const kp of allKp) {
+    for (const r of kp.relationsFrom) {
+      if (kpIds.has(r.toId)) {
+        edges.push({ from: r.fromId, to: r.toId, type: r.type, description: r.description, aiGenerated: r.aiGenerated })
+      }
+    }
+  }
+
+  // 2. 思考笔记节点(只显示有关联的)
+  const allThinking = thinking.list({ subjectId })
+  const relevantThinking = allThinking.filter(t =>
+    (t.relatedKnowledgeIds && t.relatedKnowledgeIds.length > 0) ||
+    (t.relatedThinking && t.relatedThinking.length > 0)
+  )
+  const thinkingIds = new Set(relevantThinking.map(t => t.id))
+
+  for (const t of relevantThinking) {
+    // 知识点 → 思考的边
+    if (t.relatedKnowledgeIds) {
+      for (const kpId of t.relatedKnowledgeIds) {
+        if (kpIds.has(kpId)) {
+          edges.push({ from: kpId, to: t.id, type: 'has-thinking', description: '', aiGenerated: false })
+        }
+      }
+    }
+    // 思考 → 思考的边
+    if (t.relatedThinking) {
+      for (const rt of t.relatedThinking) {
+        if (thinkingIds.has(rt.id)) {
+          edges.push({ from: t.id, to: rt.id, type: rt.type, description: rt.description || '', aiGenerated: false })
+        }
+      }
+    }
+  }
+
+  // 3. 错题节点(只显示有关联的)
+  const allWrong = wrongQuestions.list({ subjectId })
+  const relevantWrong = allWrong.filter(w => w.relatedKnowledgeId && kpIds.has(w.relatedKnowledgeId))
+  const wrongIds = new Set(relevantWrong.map(w => w.id))
+
+  for (const w of relevantWrong) {
+    if (w.relatedKnowledgeId && kpIds.has(w.relatedKnowledgeId)) {
+      edges.push({ from: w.relatedKnowledgeId, to: w.id, type: 'has-wrong', description: '', aiGenerated: false })
+    }
+  }
+
+  // 4. 计算关联数(用于知识点节点大小)
   const relCount = new Map<string, number>()
   for (const kp of allKp) relCount.set(kp.id, 0)
-  for (const e of edges) { relCount.set(e.from, (relCount.get(e.from) || 0) + 1); relCount.set(e.to, (relCount.get(e.to) || 0) + 1) }
-  const nodes: MapNode[] = allKp.map(kp => ({ id: kp.id, title: kp.title, mastery: kp.mastery, x: 0, y: 0, radius: MIN_RADIUS + Math.min(relCount.get(kp.id) || 0, 5) * ((MAX_RADIUS - MIN_RADIUS) / 5), relationCount: relCount.get(kp.id) || 0 }))
+  for (const e of edges) {
+    relCount.set(e.from, (relCount.get(e.from) || 0) + 1)
+    relCount.set(e.to, (relCount.get(e.to) || 0) + 1)
+  }
+
+  // 5. 构建节点
+  for (const kp of allKp) {
+    nodes.push({
+      id: kp.id, type: 'knowledge', title: kp.title, mastery: kp.mastery,
+      x: 0, y: 0,
+      radius: MIN_RADIUS + Math.min(relCount.get(kp.id) || 0, 5) * ((MAX_RADIUS - MIN_RADIUS) / 5),
+      relationCount: relCount.get(kp.id) || 0,
+    })
+  }
+  for (const t of relevantThinking) {
+    nodes.push({
+      id: t.id, type: 'thinking', title: t.title, status: t.status,
+      x: 0, y: 0, radius: SECONDARY_RADIUS, relationCount: (relCount.get(t.id) || 0),
+    })
+  }
+  for (const w of relevantWrong) {
+    nodes.push({
+      id: w.id, type: 'wrong', title: w.question.slice(0, 20), status: w.status,
+      x: 0, y: 0, radius: SECONDARY_RADIUS, relationCount: (relCount.get(w.id) || 0),
+    })
+  }
+
   runForceLayout(nodes, edges)
   return { subjectId, subjectName: subj.name, nodes, edges, generatedAt: new Date().toISOString() }
 }
