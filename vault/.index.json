@@ -1,11 +1,6 @@
 {
   "subjects": [
     {
-      "id": "subj_english",
-      "name": "英语",
-      "file": "subjects/英语.md"
-    },
-    {
       "id": "subj_math",
       "name": "数学",
       "file": "subjects/数学.md"
@@ -14,31 +9,35 @@
       "id": "subj_physics",
       "name": "物理",
       "file": "subjects/物理.md"
+    },
+    {
+      "id": "subj_english",
+      "name": "英语",
+      "file": "subjects/英语.md"
     }
   ],
   "knowledge": [
     {
-      "id": "kp_present_perfect",
-      "title": "现在完成时",
-      "file": "knowledge/现在完成时.md",
-      "subjectId": "subj_english",
-      "mastery": 70,
+      "id": "kp_multiplication",
+      "title": "乘法交换律",
+      "file": "knowledge/乘法交换律.md",
+      "subjectId": "subj_math",
+      "mastery": 95,
       "tags": [
-        "时态",
-        "语法",
-        "高中"
+        "运算律",
+        "初中"
       ]
     },
     {
-      "id": "kp_newton_second",
-      "title": "牛顿第二定律",
-      "file": "knowledge/牛顿第二定律.md",
-      "subjectId": "subj_physics",
-      "mastery": 60,
+      "id": "kp_pythagorean",
+      "title": "勾股定理",
+      "file": "knowledge/勾股定理.md",
+      "subjectId": "subj_math",
+      "mastery": 75,
       "tags": [
-        "力学",
-        "定律",
-        "高中"
+        "几何",
+        "定理",
+        "初中"
       ]
     },
     {
@@ -66,26 +65,27 @@
       ]
     },
     {
-      "id": "kp_multiplication",
-      "title": "乘法交换律",
-      "file": "knowledge/乘法交换律.md",
-      "subjectId": "subj_math",
-      "mastery": 95,
+      "id": "kp_newton_second",
+      "title": "牛顿第二定律",
+      "file": "knowledge/牛顿第二定律.md",
+      "subjectId": "subj_physics",
+      "mastery": 60,
       "tags": [
-        "运算律",
-        "初中"
+        "力学",
+        "定律",
+        "高中"
       ]
     },
     {
-      "id": "kp_pythagorean",
-      "title": "勾股定理",
-      "file": "knowledge/勾股定理.md",
-      "subjectId": "subj_math",
-      "mastery": 75,
+      "id": "kp_present_perfect",
+      "title": "现在完成时",
+      "file": "knowledge/现在完成时.md",
+      "subjectId": "subj_english",
+      "mastery": 70,
       "tags": [
-        "几何",
-        "定理",
-        "初中"
+        "时态",
+        "语法",
+        "高中"
       ]
     }
   ],
@@ -107,18 +107,18 @@
   ],
   "wrong": [
     {
-      "id": "wq_negative_mult",
-      "file": "wrong/计算_ (-2) × (-3) = _.md",
-      "subjectId": "subj_math",
-      "status": "reviewed",
-      "relatedKnowledgeId": "kp_multiplication"
-    },
-    {
       "id": "wq_newton_second",
       "file": "wrong/一个 2kg 的物体受到 10N 的水平拉力,其加速度是多少_.md",
       "subjectId": "subj_physics",
       "status": "unresolved",
       "relatedKnowledgeId": "kp_newton_second"
+    },
+    {
+      "id": "wq_negative_mult",
+      "file": "wrong/计算_ (-2) × (-3) = _.md",
+      "subjectId": "subj_math",
+      "status": "reviewed",
+      "relatedKnowledgeId": "kp_multiplication"
     }
   ],
   "chats": [
@@ -128,5 +128,5 @@
       "file": "chats/关于勾股定理的讨论.md"
     }
   ],
-  "updatedAt": "2026-07-28T15:32:47.443Z"
+  "updatedAt": "2026-07-28T16:24:47.624Z"
 }
