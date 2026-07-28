@@ -13,6 +13,7 @@ export default defineConfig({
       'tests/integration/**/*.test.{ts,tsx}',
     ],
     exclude: ['node_modules', '.next', 'tests/e2e'],
+    css: false,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],

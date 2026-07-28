@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { AutoTextarea } from '@/components/AutoTextarea'
+import { RichEditor } from '@/components/RichEditor'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Plus, Pencil, Trash2, Search, Sparkles, MessageCircle, BrainCircuit, Loader2, BookOpen } from 'lucide-react'
 import { toast } from 'sonner'
@@ -310,16 +311,14 @@ export function ThinkingModule({ subjects, onAskAI }: ThinkingModuleProps) {
                       <BrainCircuit className="h-3 w-3" />
                       你的思考（支持 Markdown，失焦自动保存）
                     </Label>
-                    <AutoTextarea
+                    <RichEditor
                       value={selected.content}
-                      onChange={(e) =>
-                        setSelected({ ...selected, content: e.target.value })
-                      }
-                      onBlur={(e) => saveContent({ content: e.target.value })}
+                      onChange={(val) => {
+                        setSelected({ ...selected, content: val })
+                        saveContent({ content: val })
+                      }}
                       placeholder="把脑中的想法写下来，不必完整，不必正确..."
-                      className="mt-1 font-mono text-sm"
-                      minRows={6}
-                      maxRows={20}
+                      className="mt-1"
                     />
                   </div>
 

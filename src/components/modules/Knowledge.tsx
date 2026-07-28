@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { AutoTextarea } from '@/components/AutoTextarea'
+import { RichEditor } from '@/components/RichEditor'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -541,13 +542,11 @@ export function KnowledgeModule({ subjects, onAskAI }: KnowledgeModuleProps) {
             </div>
             <div>
               <Label>内容（支持 Markdown）</Label>
-              <AutoTextarea
+              <RichEditor
                 value={form.content}
-                onChange={(e) => setForm({ ...form, content: e.target.value })}
-                className="mt-1 font-mono text-sm"
+                onChange={(val) => setForm({ ...form, content: val })}
                 placeholder="详细描述这个知识点..."
-                minRows={4}
-                maxRows={15}
+                className="mt-1"
               />
             </div>
             <div>

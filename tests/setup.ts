@@ -1,6 +1,10 @@
 import '@testing-library/jest-dom/vitest'
 import { vi } from 'vitest'
 
+// Mock CSS imports(避免 PostCSS/Tailwind 在测试中报错)
+vi.mock('@mdxeditor/editor/style.css', () => ({}))
+vi.mock('katex/dist/katex.min.css', () => ({}))
+
 // 全局 mock next/headers 等(若用到)
 // 这里暂时不需要
 

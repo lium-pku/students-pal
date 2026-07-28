@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { AutoTextarea } from '@/components/AutoTextarea'
+import { RichEditor } from '@/components/RichEditor'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
@@ -334,14 +335,15 @@ export function WrongQuestionsModule({ subjects, onAskAI }: WrongQuestionsModule
               <ScrollArea className="flex-1 -mx-6 px-6">
                 <div className="space-y-4 pb-2">
                   <div>
-                    <Label className="text-xs text-muted-foreground">题目</Label>
-                    <AutoTextarea
+                    <Label className="text-xs text-muted-foreground">题目（支持 Markdown / 公式 / 图片）</Label>
+                    <RichEditor
                       value={selected.question}
-                      onChange={(e) => setSelected({ ...selected, question: e.target.value })}
-                      onBlur={(e) => saveContent({ question: e.target.value })}
+                      onChange={(val) => {
+                        setSelected({ ...selected, question: val })
+                        saveContent({ question: val })
+                      }}
+                      placeholder="题目内容..."
                       className="mt-1"
-                      minRows={3}
-                      maxRows={10}
                     />
                   </div>
 
@@ -372,14 +374,14 @@ export function WrongQuestionsModule({ subjects, onAskAI }: WrongQuestionsModule
 
                   <div>
                     <Label className="text-xs text-muted-foreground">你的错因分析（先自己想想）</Label>
-                    <AutoTextarea
+                    <RichEditor
                       value={selected.analysis}
-                      onChange={(e) => setSelected({ ...selected, analysis: e.target.value })}
-                      onBlur={(e) => saveContent({ analysis: e.target.value })}
+                      onChange={(val) => {
+                        setSelected({ ...selected, analysis: val })
+                        saveContent({ analysis: val })
+                      }}
                       placeholder="为什么会错？是哪个概念没搞清？还是计算失误？"
                       className="mt-1"
-                      minRows={3}
-                      maxRows={8}
                     />
                   </div>
 
@@ -504,14 +506,12 @@ export function WrongQuestionsModule({ subjects, onAskAI }: WrongQuestionsModule
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>题目 *</Label>
-              <AutoTextarea
+              <Label>题目 *（支持 Markdown / 公式 / 图片）</Label>
+              <RichEditor
                 value={form.question}
-                onChange={(e) => setForm({ ...form, question: e.target.value })}
-                className="mt-1"
+                onChange={(val) => setForm({ ...form, question: val })}
                 placeholder="完整的题目内容..."
-                minRows={3}
-                maxRows={10}
+                className="mt-1"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">

@@ -131,9 +131,9 @@ describe('WrongQuestionsModule 组件', () => {
   it('点击"添加错题"应打开对话框', async () => {
     render(<WrongQuestionsModule subjects={mockSubjects} onAskAI={vi.fn()} />)
     fireEvent.click(screen.getByRole('button', { name: /添加错题/ }))
-    // 对话框中应出现"题目 *"标签
+    // 对话框中应出现"题型"标签
     await waitFor(() => {
-      expect(screen.getByText(/题目/)).toBeInTheDocument()
+      expect(screen.getByText('题型')).toBeInTheDocument()
     })
   })
 
